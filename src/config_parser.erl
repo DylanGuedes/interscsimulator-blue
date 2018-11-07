@@ -20,3 +20,14 @@ load_config_from_xml(Filename) ->
     extract_config_value(ConfigElement, events_file),
     extract_config_value(ConfigElement, generate_graph)
   }.
+
+extract_config_value([], _DesiredConfigValue) ->
+  ok;
+extract_config_value([H|T], DesiredConfigValue) ->
+  {TagName, TagValue} = H,
+  case TagName of
+    DesiredConfigValue ->
+      TagValue;
+    _ ->
+      extract_config_value(T, DesiredConfigValue)
+  end.
