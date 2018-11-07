@@ -138,7 +138,7 @@ run() ->
 
 	ConfigPath = readConfigPath(),
 
-	Config = config_parser:show( ConfigPath ),
+	Config = config_parser:load_config_from_xml( ConfigPath ),
 
 	ListCars = trip_parser:show( element( 4 , Config ) ), % Read the cars from the trips.xml file
 
