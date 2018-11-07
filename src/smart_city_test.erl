@@ -97,49 +97,7 @@ readConfigPath() ->
 	{ok, Data} = file:read_line(Device),
 	string:chomp(Data).
 
--spec run() -> no_return().
-run() ->	
-
-	?test_start,
-	
-	% Use default simulation settings (50Hz, batch reproducible):
-	SimulationSettings = #simulation_settings{
-
-							simulation_name = "Sim-Diasca Smart City Integration Test",
-
-							tick_duration = 1
-
-							% We leave it to the default specification (all_outputs):
-							% result_specification =
-							%  [ { targeted_patterns, [ {".*",[data_and_plot]} ] },
-							%    { blacklisted_patterns, ["^Second" ] } ]
-
-							%result_specification = [ { targeted_patterns, [ {".*",data_only} ] } ]
-
-						   },
-
-
-	DeploymentSettings = #deployment_settings{
-
-							computing_hosts = { use_host_file_otherwise_local,
-												"sim-diasca-host-candidates.txt" },
-
-							additional_elements_to_deploy = [ { ".", code } ],
-
-							enable_performance_tracker = false
-
-						   },
-
-	% Default load balancing settings (round-robin placement heuristic):
-	LoadBalancingSettings = #load_balancing_settings{},
-
-	% A deployment manager is created directly on the user node:
-	DeploymentManagerPid = sim_diasca:init( SimulationSettings, DeploymentSettings, LoadBalancingSettings ),
-
-	ConfigPath = readConfigPath(),
-
-	Config = config_parser:load_config_from_xml( ConfigPath ),
-
+load_initial_actors(Config) ->
 	ListCars = trip_parser:show( element( 4 , Config ) ), % Read the cars from the trips.xml file
 
 	CityGraph = map_parser:show( element( 3 , Config ) , false ), % Read the map from the map.xml file
@@ -198,7 +156,52 @@ run() ->
 	case ListEvents of
 		ok -> ok;
 		_  -> class_Actor:create_initial_actor( class_EventsManager, [ "EventsManager", ListEvents ] )
-	end,
+	end.
+
+-spec run() -> no_return().
+run() ->	
+
+	?test_start,
+	
+	% Use default simulation settings (50Hz, batch reproducible):
+	SimulationSettings = #simulation_settings{
+
+							simulation_name = "Sim-Diasca Smart City Integration Test",
+
+							tick_duration = 1
+
+							% We leave it to the default specification (all_outputs):
+							% result_specification =
+							%  [ { targeted_patterns, [ {".*",[data_and_plot]} ] },
+							%    { blacklisted_patterns, ["^Second" ] } ]
+
+							%result_specification = [ { targeted_patterns, [ {".*",data_only} ] } ]
+
+						   },
+
+
+	DeploymentSettings = #deployment_settings{
+
+							computing_hosts = { use_host_file_otherwise_local,
+												"sim-diasca-host-candidates.txt" },
+
+							additional_elements_to_deploy = [ { ".", code } ],
+
+							enable_performance_tracker = false
+
+						   },
+
+	% Default load balancing settings (round-robin placement heuristic):
+	LoadBalancingSettings = #load_balancing_settings{},
+
+	% A deployment manager is created directly on the user node:
+	DeploymentManagerPid = sim_diasca:init( SimulationSettings, DeploymentSettings, LoadBalancingSettings ),
+
+	ConfigPath = readConfigPath(),
+
+	Config = config_parser:load_config_from_xml( ConfigPath ),
+
+  load_initial_actors(Config),
 
 	SimulationDuration = element( 1 , string:to_integer(element( 2 , Config ) ) ),
 
