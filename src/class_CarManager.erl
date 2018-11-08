@@ -88,7 +88,7 @@ create_person_car( Count , State , CarName , ListTripsFinal , Type , Park , Mode
 	StartTime = class_RandomManager:get_uniform_value( 1200 ),
 
 	NewState = class_Actor:create_actor( class_Car,
-		[ CarFinalName , ListTripsFinal , StartTime , Type , Park , Mode, Uuid ] , State ),
+		[ CarFinalName , ListTripsFinal , StartTime , 1, 2, Type , Park , Mode, Uuid ] , State ),
 
 	create_person_car( Count - 1 , NewState , CarName , ListTripsFinal , Type , Park , Mode, Uuid ).
 

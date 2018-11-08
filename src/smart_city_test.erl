@@ -68,10 +68,10 @@ calculate_bus_path( [ Stop | List ] , CityGraph  , Path ) ->
 	end.	
 
 spaw_proccess( [] , _CityGraph ) -> ok;
-spaw_proccess( [ List | MoreLists ] , CityGraph ) ->
-	{ Name , ListTrips } = List,
+spaw_proccess( [ _List | MoreLists ] , CityGraph ) ->
+	%% { _Name , _ListTrips } = List.
 
-	spawn( create_agents, iterate_list , [ 1 , ListTrips , CityGraph , Name , self() ]),
+	%% spawn( create_agents, iterate_list , [ 1 , ListTrips , CityGraph , Name , self() ]),
 	spaw_proccess( MoreLists , CityGraph ).
 
 split_list( [] , _NumberLists , _ListSplit , ListReturn ) -> ListReturn;
@@ -83,14 +83,14 @@ split_list( [ Name | Names ] , NumberLists , ListSplit , ListReturn ) ->
 
 	split_list( Names , length ( Names ) , ListCars , ListReturn ++ Element ).
 
-collectResults( [] ) -> ok;
-collectResults( ListNames ) ->
-  receive
-    { Name } ->
-      collectResults( ListNames -- [Name] );
-    _ ->
-      collectResults( ListNames )
-  end.
+%% collectResults( [] ) -> ok;
+%% collectResults( ListNames ) ->
+%%   receive
+%%     { Name } ->
+%%       collectResults( ListNames -- [Name] );
+%%     _ ->
+%%       collectResults( ListNames )
+%%   end.
 
 readConfigPath() ->
 	{ok, Device} = file:open('../interscsimulator.conf', [read]),
@@ -147,7 +147,7 @@ load_initial_actors(Config) ->
 
 	spaw_proccess( List , CityGraph ),
  
-	collectResults( Names ),
+	%% collectResults( Names ),
 
 	create_buses( ListBuses , CityGraph  ),
 
@@ -168,7 +168,8 @@ run() ->
 
 							simulation_name = "Sim-Diasca Smart City Integration Test",
 
-							tick_duration = 1
+							tick_duration = 1,
+              initialisation_files = ["trips.init"]
 
 							% We leave it to the default specification (all_outputs):
 							% result_specification =

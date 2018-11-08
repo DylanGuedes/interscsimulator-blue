@@ -12,7 +12,7 @@
 		 remote_synchronous_timed_new/4, remote_synchronous_timed_new_link/4,
 		 construct/4, destruct/1).
 
--define(wooper_method_export, onFirstDiasca/2, calculate_bfs/4, is_ready/2).
+-define(wooper_method_export, onFirstDiasca/2, calculate_bfs/3, is_ready/2).
 
 -include("smart_city_test_types.hrl").
 
@@ -31,6 +31,7 @@ construct(State, ?wooper_construct_parameters) ->
   populate_graph_nodes(Nodes, G),
   populate_graph_links(Links, G),
   ets:insert(interscsimulator, {graph_pid, G}),
+  ets:insert(interscsimulator, {city_graph_pid, self()}),
 	setAttributes(ActorState, [{status, ready}]).
 
 -spec destruct(wooper:state()) -> wooper:state().
@@ -115,19 +116,22 @@ onFirstDiasca(State, _SendingActorPid) ->
   io:format("[INFO] Links: ~p~n", [L]),
 	?wooper_return_state_only(State).
 
-calculate_bfs(State, Origin, Destination, WhoPid) ->
+calculate_bfs(State, {Origin, Destination}, WhoPid) ->
+  io:format("~n[INFO] (From: CityGraph) -> Calculating Bfs~n"),
   [{Origin, U}] = ets:lookup(nodes_pids, Origin),
   [{Destination, V}] = ets:lookup(nodes_pids, Destination),
   [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
   Path = digraph:get_short_path(G, U, V),
-  case Path of
+  S1 = case Path of
     false ->
       io:format("~n[ERROR] No path is possible from ~p to ~p~n", [Origin, Destination]),
       class_Actor:send_actor_message(WhoPid, {update_path, error}, State);
     _ ->
-      class_Actor:send_actor_message(WhoPid, {update_path, Path}, State)
+      io:format("~n[INFO] Path found!~n"),
+      class_Actor:send_actor_message(WhoPid, {update_path, [Path]}, State)
   end,
-  ?wooper_return_state_only(State).
+  io:format("[E] S1: ~n"),
+  ?wooper_return_state_only(S1).
 
 is_ready(State, WhoPid) ->
   case getAttribute(State, status) of
