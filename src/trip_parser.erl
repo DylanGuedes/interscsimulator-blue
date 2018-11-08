@@ -1,7 +1,9 @@
 -module(trip_parser).
+
 -include_lib("xmerl/include/xmerl.hrl").
 
 -export([load_trips_from_xml/1]).
+
 
 load_trips_from_xml(Filename) ->
   {Xml, _Misc} = xmerl_scan:file(Filename),
@@ -21,15 +23,18 @@ do_parse_trips([H|T], Agg) ->
   end.
 
 mount_trip(A) ->
-  [{look_for_attr(A, origin),
+  {
+    look_for_attr(A, origin),
     look_for_attr(A, destination),
     look_for_attr(A, count),
     look_for_attr(A, start),
     look_for_attr(A, link_origin),
     look_for_attr(A, type),
     look_for_attr(A, mode),
+    look_for_attr(A, name),
     look_for_attr(A, park),
-    look_for_attr(A, uuid)}].
+    look_for_attr(A, uuid)
+  }.
 
 look_for_attr(Available, Desired) ->
   case lists:keyfind(Desired, 1, Available) of
