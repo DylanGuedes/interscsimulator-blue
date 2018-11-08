@@ -1,134 +1,41 @@
 -module(trip_parser).
 -include_lib("xmerl/include/xmerl.hrl").
 
-% usage:
-%
-% l(osm_parser).
-% osm_parser:show("map.osm").
+-export([load_trips_from_xml/1]).
 
--export([
-         show/1
-        ]).
+load_trips_from_xml(Filename) ->
+  {Xml, _Misc} = xmerl_scan:file(Filename),
+  SimplifiedXml = xmerl_lib:simplify_element(Xml),
+  {scsimulator_matrix, _, InnerElement} = SimplifiedXml,
+  do_parse_trips(InnerElement, []).
 
-% Init the XML processing
-show(Infilename) ->
-    {Doc, _Misc} = xmerl_scan:file(Infilename),
-    init(Doc).
+do_parse_trips([], Agg) ->
+  Agg;
+do_parse_trips([H|T], Agg) ->
+  case H of
+    {trip, Attrs, _} ->
+      Trip = mount_trip(Attrs),
+      do_parse_trips(T, [Trip | Agg]);
+    _ ->
+      do_parse_trips(T, Agg)
+  end.
 
-% read the OSM tag and extract all children
-init(Node) ->
-    case Node of
-        #xmlElement{name=Name, content=Content} ->
-	    case Name of
-		scsimulator_matrix -> 
-			trips(Content , [] , false);
-		_ -> ok
-	    end;
-            _ -> ok
-    end.
+mount_trip(A) ->
+  [{look_for_attr(A, origin),
+    look_for_attr(A, destination),
+    look_for_attr(A, count),
+    look_for_attr(A, start),
+    look_for_attr(A, link_origin),
+    look_for_attr(A, type),
+    look_for_attr(A, mode),
+    look_for_attr(A, park),
+    look_for_attr(A, uuid)}].
 
-trips([], List , _Multi ) -> List;
-trips([Node | MoreNodes] , List , Multi ) ->
-    Element = extract_node( Node , Multi ),
-    case Element of
-
-	ok ->
-    		
-		trips( MoreNodes , List , Multi);
-
-	_ ->
-		NewList = List ++ Element,
-		trips( MoreNodes , NewList , Multi)
-
-    end.
-
-%
-% Show a node/element and then the children of that node.
-extract_node( Node , Multi ) ->
-
-    case Node of
-        #xmlElement{ name=Name , content=Content , attributes=Attributes } ->
-            
-	    case Name of
-		
-		trip -> 
-			
-			case Multi of 
-
-				false ->
-			
-					NamePerson = children( Attributes , name ),
-					Origin = children( Attributes , origin ),
-					Destination = children( Attributes , destination ),
-					Count = children( Attributes , count ),
-					StartTime = children( Attributes , start ),
-					LinkOrigin = children( Attributes , link_origin ),
-					Type = children( Attributes , type ),
-					Mode = children( Attributes , mode ),
-					Park = children( Attributes , park ),
-					Uuid = children( Attributes , uuid ),
-					[ { Origin , Destination , Count , StartTime , LinkOrigin , Type , Mode , NamePerson , Park, Uuid } ];
-
-				true ->
-
-					Origin = children( Attributes , origin ),
-					Destination = children( Attributes , destination ),
-					LinkOrigin = children( Attributes , link_origin ),
-					LinkDestination = children( Attributes , link_destination ),
-					Mode = children( Attributes , mode ),
-					Line = children( Attributes , line ),
-					[ { Origin , Destination , LinkOrigin , Mode , LinkDestination , Line } ]
-					
-			end;
-			
-		multi_trip ->
-
-			NamePerson = children( Attributes , name ),
-			List = trips( Content , [] , true),
-			Count = children( Attributes , count ),
-			StartTime = children( Attributes , start ),
-			Type = children( Attributes , type ),
-			Mode = children( Attributes , mode ), 
-			[ { StartTime , Type , Count , List , NamePerson , Mode } ];
-			
-
-		_ ->
-			ok
-	    end;
-
-            _ -> ok
-    end.
-
-children( [] , _Type ) ->
-    ok;
-
-children( [Node | MoreNodes] , Type ) ->
-    Element = extract_children( Node , Type ),
-    case Element of
-
-	ok ->
-    		
-		children( MoreNodes , Type );
-
-	_ ->
-		Element
-
-    end.
-
-
-extract_children( Node , Type ) ->
-
-    case Node of
-        #xmlAttribute{name=Name, value=Value} ->
-            
-	    case Name of
-		
-		Type -> 
-
-			Value;
-
-		_ -> ok
-
-	    end;
-            _ -> ok
-    end.
+look_for_attr(Available, Desired) ->
+  case lists:keyfind(Desired, 1, Available) of
+    {Desired, V} ->
+      V;
+    _ ->
+      io:format("~n[ERROR] Key `~p` not found in trip attributes list!~n", [Desired]),
+      throw({key_not_found, Desired})
+  end.

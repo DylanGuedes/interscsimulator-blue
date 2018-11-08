@@ -98,7 +98,7 @@ readConfigPath() ->
 	string:chomp(Data).
 
 load_initial_actors(Config) ->
-	ListCars = trip_parser:show( element( 4 , Config ) ), % Read the cars from the trips.xml file
+	ListCars = trip_parser:load_trips_from_xml( element( 4 , Config ) ), % Read the cars from the trips.xml file
 
 	CityGraph = map_parser:show( element( 3 , Config ) , false ), % Read the map from the map.xml file
 
