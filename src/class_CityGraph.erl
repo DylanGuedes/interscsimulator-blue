@@ -25,6 +25,7 @@ construct(State, ?wooper_construct_parameters) ->
 	setAttributes(ActorState, [{status, not_ready}]),
   ets:new(interscsimulator, [public, set, named_table]),
   ets:new(nodes_pids, [public, set, named_table]),
+  ets:new(edges_pids, [public, set, named_table]),
   G = digraph:new(),
   Nodes = extract_nodes_from_xml(VerticesPath),
   Links = extract_links_from_xml(EdgesPath),
@@ -48,11 +49,13 @@ populate_graph_nodes([{Id, _X, _Y}|T], G) ->
 
 populate_graph_links([], _G) ->
   ok;
-populate_graph_links([{U, V, L}|T], G) ->
-  [{U, PidU}] = ets:lookup(nodes_pids, U),
-  [{V, PidV}] = ets:lookup(nodes_pids, V), 
-  digraph:add_edge(G, PidU, PidV, L),
-  populate_graph_links(T, G).
+populate_graph_links([{V1, V2, Label}|Tail], G) ->
+  io:format("~n[ERROR] Inserting V1, v2 = (~p, ~p)~n", [V1, V2]),
+  [{V1, PidV1}] = ets:lookup(nodes_pids, V1),
+  [{V2, PidV2}] = ets:lookup(nodes_pids, V2), 
+  E = digraph:add_edge(G, PidV1, PidV2, Label),
+  ets:insert(edges_pids, {{V1, V2}, E}),
+  populate_graph_links(Tail, G).
 
 extract_nodes_from_xml(XmlPath) ->
   {Xml, _Misc} = xmerl_scan:file(XmlPath),

@@ -57,7 +57,8 @@ destruct( State ) ->
 
 -spec actSpontaneous( wooper:state() ) -> oneway_return().
 actSpontaneous( State ) ->	
-  io:format("~n[INFO] Car acting spontaneous...~n"),
+  CurrentTick = class_Actor:get_current_tick_offset(State),
+  io:format("~n[INFO] Car acting spontaneous at tick ~p...~n", [CurrentTick]),
   Status = getAttribute(State, status),
   case Status of
     ready_to_travel ->
@@ -67,10 +68,6 @@ actSpontaneous( State ) ->
       CarName = getAttribute(State, car_name),
       io:format("~n[INFO] Path for car ~p not resolved!~n", [CarName]),
       resolve_path(State);
-    finished ->
-      CarName = getAttribute(State, car_name),
-      io:format("~n[INFO] Travel for car ~p finished!~n", [CarName]),
-      finish_trip(State);
     _ ->
       io:format("~n[ERROR] Don't know how to handle status ~p!~n", [Status]),
       executeOneway(State, declareTermination)
@@ -89,33 +86,40 @@ finish_trip(State) ->
   {V, [LastNode]} = digraph:vertex(G, V),
   Mode = getAttribute(State, mode),
   print:write_final_message(Type, Len, ST, Id, LastTick, LastNode, Mode, csv),
-  executeOneway(State, declareTermination).
+  S1 = setAttribute(State, status, finished),
+  executeOneway(S1, declareTermination).
 
 resolve_path(State) ->
   Origin = getAttribute(State, origin),
   Destination = getAttribute(State, destination),
   [{city_graph_pid, GPid}] = ets:lookup(interscsimulator, city_graph_pid),
   S2 = class_Actor:send_actor_message(GPid, {calculate_bfs, {Origin, Destination}}, State),
-  StartTime = getAttribute(State, start_time),
-  T = class_Actor:get_current_tick_offset(S2) + StartTime,
-  io:format("~n[DEBUG] Next action at tick ~p~n", [T]),
-  executeOneway(S2, addSpontaneousTick, T).
+	?wooper_return_state_only(S2).
 
 next_hop(State) ->
   RemainingNodes = getAttribute(State, remaining_nodes),
-  StartTime = getAttribute(State, start_time),
-  io:format("~nStart time: ~p~n", [StartTime]),
   case RemainingNodes of
     [] ->
-      S = setAttribute(State, status, finished),
-      Time = class_Actor:get_current_tick_offset(S) + StartTime,
+      finish_trip(State);
+    [Current, Next | T] ->
+      S1 = setAttribute(State, remaining_nodes, [Next|T]),
+      S2 = setAttribute(S1, current_node, Current),
+      [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
+      {Current, [V1]} = digraph:vertex(G, Current),
+      {Next, [V2]} = digraph:vertex(G, Next),
+      io:format("~n[INFO] Current: ~p, Next: ~p~n", [V1, V2]),
+      [{{V1, V2}, EdgePid}] = ets:lookup(edges_pids, {V1, V2}),
+      {_, _, _, EdgeLabel} = digraph:edge(G, EdgePid),
+      io:format("~n[INFO] Edge Label: ~p~n", [EdgeLabel]),
+      Time = class_Actor:get_current_tick_offset(S2) + 1,
       io:format("~n[DEBUG] New next tick: ~p~n", [Time]),
-      executeOneway(S, addSpontaneousTick, Time);
+      executeOneway(S2, addSpontaneousTick, Time);
+
     [H|T] ->
       S1 = setAttribute(State, remaining_nodes, T),
       S2 = setAttribute(S1, current_node, H),
       io:format("~n[INFO] Actual vertex: ~p~n", [H]),
-      Time = class_Actor:get_current_tick_offset(S2) + StartTime,
+      Time = class_Actor:get_current_tick_offset(S2) + 1,
       io:format("~n[DEBUG] New next tick: ~p~n", [Time]),
       executeOneway(S2, addSpontaneousTick, Time)
   end.
@@ -330,7 +334,9 @@ next_hop(State) ->
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
 onFirstDiasca(State, _SendingActorPid) ->
 	StartTime = getAttribute(State, start_time),
-  FirstActionTime = class_Actor:get_current_tick_offset( State ) + StartTime,   	
+  CurrentTick = class_Actor:get_current_tick_offset(State),
+  FirstActionTime = class_Actor:get_current_tick_offset(State) + StartTime,   	
+  io:format("~n[INFO] FIRST TICK: ~p, Current Tick: ~p ~n", [StartTime, CurrentTick]),
 	NewState = setAttribute(State, start_time , FirstActionTime),
 	executeOneway(NewState, addSpontaneousTick, FirstActionTime).
 
@@ -338,7 +344,8 @@ update_path(State, Path, _Who) ->
   io:format("~n[INFO] New update_path! ~p~n", [Path]),
   S1 = setAttribute(State, remaining_nodes, Path),
   S2 = setAttribute(S1, status, ready_to_travel),
-  ?wooper_return_state_only(S2).
+  T = class_Actor:get_current_tick_offset(S2),
+	executeOneway(S2, addSpontaneousTick, T+1).
 
 %print_movement( State ) ->
 
