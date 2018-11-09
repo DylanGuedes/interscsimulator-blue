@@ -6,82 +6,82 @@
 -include("test_constructs.hrl").	
 
 % for each vertex is necessary to save its out links
-create_map_list([] , _Graph ) -> [];
-create_map_list([Element | MoreElements] , Graph ) ->
-	
-	{_, V1, V2, Label} = digraph:edge( Graph , Element ),
-
-	{ _ , LabelV1 } = digraph:vertex( Graph , V1 ),
-	{ _ , LabelV2 } = digraph:vertex( Graph , V2 ),
-
-	Id = element( 1 , Label),
-	Length = element( 1 , string:to_float(element( 2 , Label))), % Link Length	
-	Capacity = element( 1 , string:to_float(element( 3 , Label))),
-	Freespeed = element( 1 , string:to_float(element( 4 , Label))), 		
-	
-	Vertices = list_to_atom( lists:concat( [ V1 , V2 ] )),
-
-	NewElement = { Vertices , { list_to_atom( Id ) , Length , Capacity , Freespeed , 0 , LabelV1 , LabelV2 } },  % 0 is the number of cars in the link
-
-	[ NewElement | create_map_list( MoreElements , Graph ) ].
-
-create_street_list( Graph ) ->	
-	Vertices = digraph:vertices( Graph ),
-	create_street_list( Vertices , [] , Graph ).
-
-create_street_list([] , List , _Graph ) -> List;
-create_street_list( [ Vertex | MoreElements] , List , Graph) ->
-	Edges = digraph:out_edges( Graph , Vertex ),
-	ListEdges = create_map_list( Edges , Graph ),
-	create_street_list( MoreElements , List ++ ListEdges , Graph ).
-
-create_buses( [] , _CityGraph  ) -> ok;
-create_buses( [ Bus | Buses ] , CityGraph  ) -> 
-
-	Id = element( 1 , Bus ),
-	Interval = element( 2 , Bus ),
-	Stops = element( 3 , Bus ),
-	StartTime = element( 4 , Bus ),
-
-	Path = calculate_bus_path( Stops , CityGraph , [] ),
-
-	FinalStartTime = element( 1 , string:to_integer( StartTime ) ) - 600 + class_RandomManager:get_uniform_value( 1200 ),
-
-	class_Actor:create_initial_actor( class_Bus,
-		[ Id , Path , FinalStartTime , Interval , Stops ] ),
-
-	create_buses( Buses , CityGraph  ).
-
-calculate_bus_path( [ Stop | List ] , CityGraph  , Path ) ->
-	case length( List ) >= 1 of 
-		true ->
-			NextStop = lists:nth( 1 , List ),
-			ParcialPath = case length( List ) == 1 of 
-			   true -> 
-				digraph:get_short_path( CityGraph , list_to_atom( Stop ) , list_to_atom( NextStop ) );	
-			   false ->					
-				lists:droplast( digraph:get_short_path( CityGraph , list_to_atom( Stop ) , list_to_atom( NextStop ) ) )		
-			end,
-			calculate_bus_path( List , CityGraph , Path ++ ParcialPath);
-		false ->
-			Path
-	end.	
-
-spaw_proccess( [] , _CityGraph ) -> ok;
-spaw_proccess( [ _List | MoreLists ] , CityGraph ) ->
-	%% { _Name , _ListTrips } = List.
-
-	%% spawn( create_agents, iterate_list , [ 1 , ListTrips , CityGraph , Name , self() ]),
-	spaw_proccess( MoreLists , CityGraph ).
-
-split_list( [] , _NumberLists , _ListSplit , ListReturn ) -> ListReturn;
-split_list( [ Name | Names ] , NumberLists , ListSplit , ListReturn ) ->
-
-	{List , ListCars } = lists:split(round (length (ListSplit) / NumberLists), ListSplit),
-
-	Element = [ { Name , List } ],
-
-	split_list( Names , length ( Names ) , ListCars , ListReturn ++ Element ).
+%% create_map_list([] , _Graph ) -> [];
+%% create_map_list([Element | MoreElements] , Graph ) ->
+%% 	
+%% 	{_, V1, V2, Label} = digraph:edge( Graph , Element ),
+%%
+%% 	{ _ , LabelV1 } = digraph:vertex( Graph , V1 ),
+%% 	{ _ , LabelV2 } = digraph:vertex( Graph , V2 ),
+%%
+%% 	Id = element( 1 , Label),
+%% 	Length = element( 1 , string:to_float(element( 2 , Label))), % Link Length	
+%% 	Capacity = element( 1 , string:to_float(element( 3 , Label))),
+%% 	Freespeed = element( 1 , string:to_float(element( 4 , Label))), 		
+%% 	
+%% 	Vertices = list_to_atom( lists:concat( [ V1 , V2 ] )),
+%%
+%% 	NewElement = { Vertices , { list_to_atom( Id ) , Length , Capacity , Freespeed , 0 , LabelV1 , LabelV2 } },  % 0 is the number of cars in the link
+%%
+%% 	[ NewElement | create_map_list( MoreElements , Graph ) ].
+%%
+%% create_street_list( Graph ) ->	
+%% 	Vertices = digraph:vertices( Graph ),
+%% 	create_street_list( Vertices , [] , Graph ).
+%%
+%% create_street_list([] , List , _Graph ) -> List;
+%% create_street_list( [ Vertex | MoreElements] , List , Graph) ->
+%% 	Edges = digraph:out_edges( Graph , Vertex ),
+%% 	ListEdges = create_map_list( Edges , Graph ),
+%% 	create_street_list( MoreElements , List ++ ListEdges , Graph ).
+%%
+%% create_buses( [] , _CityGraph  ) -> ok;
+%% create_buses( [ Bus | Buses ] , CityGraph  ) -> 
+%%
+%% 	Id = element( 1 , Bus ),
+%% 	Interval = element( 2 , Bus ),
+%% 	Stops = element( 3 , Bus ),
+%% 	StartTime = element( 4 , Bus ),
+%%
+%% 	Path = calculate_bus_path( Stops , CityGraph , [] ),
+%%
+%% 	FinalStartTime = element( 1 , string:to_integer( StartTime ) ) - 600 + class_RandomManager:get_uniform_value( 1200 ),
+%%
+%% 	class_Actor:create_initial_actor( class_Bus,
+%% 		[ Id , Path , FinalStartTime , Interval , Stops ] ),
+%%
+%% 	create_buses( Buses , CityGraph  ).
+%%
+%% calculate_bus_path( [ Stop | List ] , CityGraph  , Path ) ->
+%% 	case length( List ) >= 1 of 
+%% 		true ->
+%% 			NextStop = lists:nth( 1 , List ),
+%% 			ParcialPath = case length( List ) == 1 of 
+%% 			   true -> 
+%% 				digraph:get_short_path( CityGraph , list_to_atom( Stop ) , list_to_atom( NextStop ) );	
+%% 			   false ->					
+%% 				lists:droplast( digraph:get_short_path( CityGraph , list_to_atom( Stop ) , list_to_atom( NextStop ) ) )		
+%% 			end,
+%% 			calculate_bus_path( List , CityGraph , Path ++ ParcialPath);
+%% 		false ->
+%% 			Path
+%% 	end.	
+%%
+%% spaw_proccess( [] , _CityGraph ) -> ok;
+%% spaw_proccess( [ _List | MoreLists ] , CityGraph ) ->
+%% 	%% { _Name , _ListTrips } = List.
+%%
+%% 	%% spawn( create_agents, iterate_list , [ 1 , ListTrips , CityGraph , Name , self() ]),
+%% 	spaw_proccess( MoreLists , CityGraph ).
+%%
+%% split_list( [] , _NumberLists , _ListSplit , ListReturn ) -> ListReturn;
+%% split_list( [ Name | Names ] , NumberLists , ListSplit , ListReturn ) ->
+%%
+%% 	{List , ListCars } = lists:split(round (length (ListSplit) / NumberLists), ListSplit),
+%%
+%% 	Element = [ { Name , List } ],
+%%
+%% 	split_list( Names , length ( Names ) , ListCars , ListReturn ++ Element ).
 
 %% collectResults( [] ) -> ok;
 %% collectResults( ListNames ) ->
@@ -97,112 +97,96 @@ readConfigPath() ->
 	{ok, Data} = file:read_line(Device),
 	string:chomp(Data).
 
-load_initial_actors(Config) ->
-	ListCars = trip_parser:load_trips_from_xml( element( 4 , Config ) ), % Read the cars from the trips.xml file
-
-	CityGraph = map_parser:show( element( 3 , Config ) , false ), % Read the map from the map.xml file
-
-	MetroFile = element( 5 , Config ), % Read the metro graph from the city. TODO: verify if this configurition does not exist.
-
-	ListBuses = bus_parser:show( element( 6 , Config ) ), % Read the list of buses. TODO: verify if this configurition does not exist.
-
-	ParkSpots = park_parser:read_csv( element( 7 , Config ) ), 
-
-	ListEdges = create_street_list( CityGraph ),
-
-	{ _ , Pwd } = file:get_cwd(),
-	OutputPath = string:concat( Pwd, "/" ),
-	AmqpClientPath = string:concat( Pwd, "/../deps/amqp_client"),
-
-	LogName = string:concat( OutputPath, element( 1 , Config ) ),
-	Paths = [ AmqpClientPath,
-			string:concat( AmqpClientPath, "/ebin" ),
-			string:concat( AmqpClientPath, "/include/rabbit_common/ebin" )
-		],
-
-	class_Actor:create_initial_actor( class_Street,  [ "Street" , ListEdges , LogName , Paths ] ),
-
-	case MetroFile of
-		ok -> ok;
-		_  -> class_Actor:create_initial_actor( class_Metro, [ "MetroCity" , string:concat( OutputPath , MetroFile ) ] )
-	end,
-
-	case element( 8 , Config ) of % verify if it is necessary to generate the city graph actor 
-		"true" ->
-			 class_Actor:create_initial_actor( class_City, [ "City" , { string:concat( OutputPath, element( 3 , Config ) ) } ] );
-		_ ->
-			ok
-	end,
-
-	case ParkSpots of
-	    ok ->
-		ok;
-	    _ ->		
-		class_Actor:create_initial_actor( class_Parking , [ "Parking" , ParkSpots ] )
-	end,
-
-	Names = [ "car1" , "car2" , "car3" , "car4" , "car5" , "car6" , "car7" , "car8" ],
-
-	List = split_list( Names , length ( Names ) , ListCars , []  ),   
-
-	spaw_proccess( List , CityGraph ),
- 
-	%% collectResults( Names ),
-
-	create_buses( ListBuses , CityGraph  ),
-
-	ListEvents = events_parser:read_csv( element( 9 , Config ) ),
-
-	case ListEvents of
-		ok -> ok;
-		_  -> class_Actor:create_initial_actor( class_EventsManager, [ "EventsManager", ListEvents ] )
-	end.
+%% load_initial_actors(Config) ->
+%% 	ListCars = trip_parser:load_trips_from_xml( element( 4 , Config ) ), % Read the cars from the trips.xml file
+%%
+%% 	CityGraph = map_parser:show( element( 3 , Config ) , false ), % Read the map from the map.xml file
+%%
+%% 	MetroFile = element( 5 , Config ), % Read the metro graph from the city. TODO: verify if this configurition does not exist.
+%%
+%% 	ListBuses = bus_parser:show( element( 6 , Config ) ), % Read the list of buses. TODO: verify if this configurition does not exist.
+%%
+%% 	ParkSpots = park_parser:read_csv( element( 7 , Config ) ), 
+%%
+%% 	ListEdges = create_street_list( CityGraph ),
+%%
+%% 	{ _ , Pwd } = file:get_cwd(),
+%% 	OutputPath = string:concat( Pwd, "/" ),
+%% 	AmqpClientPath = string:concat( Pwd, "/../deps/amqp_client"),
+%%
+%% 	LogName = string:concat( OutputPath, element( 1 , Config ) ),
+%% 	Paths = [ AmqpClientPath,
+%% 			string:concat( AmqpClientPath, "/ebin" ),
+%% 			string:concat( AmqpClientPath, "/include/rabbit_common/ebin" )
+%% 		],
+%%
+%% 	class_Actor:create_initial_actor( class_Street,  [ "Street" , ListEdges , LogName , Paths ] ),
+%%
+%% 	case MetroFile of
+%% 		ok -> ok;
+%% 		_  -> class_Actor:create_initial_actor( class_Metro, [ "MetroCity" , string:concat( OutputPath , MetroFile ) ] )
+%% 	end,
+%%
+%% 	case element( 8 , Config ) of % verify if it is necessary to generate the city graph actor 
+%% 		"true" ->
+%% 			 class_Actor:create_initial_actor( class_City, [ "City" , { string:concat( OutputPath, element( 3 , Config ) ) } ] );
+%% 		_ ->
+%% 			ok
+%% 	end,
+%%
+%% 	case ParkSpots of
+%% 	    ok ->
+%% 		ok;
+%% 	    _ ->		
+%% 		class_Actor:create_initial_actor( class_Parking , [ "Parking" , ParkSpots ] )
+%% 	end,
+%%
+%% 	Names = [ "car1" , "car2" , "car3" , "car4" , "car5" , "car6" , "car7" , "car8" ],
+%%
+%% 	List = split_list( Names , length ( Names ) , ListCars , []  ),   
+%%
+%% 	spaw_proccess( List , CityGraph ),
+%%  
+%% 	%% collectResults( Names ),
+%%
+%% 	create_buses( ListBuses , CityGraph  ),
+%%
+%% 	ListEvents = events_parser:read_csv( element( 9 , Config ) ),
+%%
+%% 	case ListEvents of
+%% 		ok -> ok;
+%% 		_  -> class_Actor:create_initial_actor( class_EventsManager, [ "EventsManager", ListEvents ] )
+%% 	end.
 
 -spec run() -> no_return().
 run() ->	
-
 	?test_start,
 	
 	% Use default simulation settings (50Hz, batch reproducible):
 	SimulationSettings = #simulation_settings{
-
-							simulation_name = "Sim-Diasca Smart City Integration Test",
-
-							tick_duration = 1,
-              initialisation_files = ["trips.init"]
-
-							% We leave it to the default specification (all_outputs):
-							% result_specification =
-							%  [ { targeted_patterns, [ {".*",[data_and_plot]} ] },
-							%    { blacklisted_patterns, ["^Second" ] } ]
-
-							%result_specification = [ { targeted_patterns, [ {".*",data_only} ] } ]
-
-						   },
+    simulation_name = "Sim-Diasca Smart City Integration Test",
+    tick_duration = 1,
+    initialisation_files = ["trips.init"]
+  },
 
 
 	DeploymentSettings = #deployment_settings{
-
-							computing_hosts = { use_host_file_otherwise_local,
-												"sim-diasca-host-candidates.txt" },
-
-							additional_elements_to_deploy = [ { ".", code } ],
-
-							enable_performance_tracker = false
-
-						   },
+    computing_hosts = { use_host_file_otherwise_local,
+              "sim-diasca-host-candidates.txt" },
+    additional_elements_to_deploy = [ { ".", code } ],
+    enable_performance_tracker = false
+  },
 
 	% Default load balancing settings (round-robin placement heuristic):
 	LoadBalancingSettings = #load_balancing_settings{},
 
 	% A deployment manager is created directly on the user node:
-	DeploymentManagerPid = sim_diasca:init( SimulationSettings, DeploymentSettings, LoadBalancingSettings ),
+  DeploymentManagerPid = sim_diasca:init( SimulationSettings, DeploymentSettings, LoadBalancingSettings ),
 
 	ConfigPath = readConfigPath(),
 
 	Config = config_parser:load_config_from_xml( ConfigPath ),
-
-  load_initial_actors(Config),
+  %% load_initial_actors(Config),
 
 	SimulationDuration = element( 1 , string:to_integer(element( 2 , Config ) ) ),
 

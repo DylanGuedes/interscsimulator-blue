@@ -23,7 +23,12 @@
 construct(State, ?wooper_construct_parameters) ->
 	ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
 	setAttributes(ActorState, [{status, not_ready}]),
-  ets:new(interscsimulator, [public, set, named_table]),
+  case ets:info(interscsimulator) of
+    undefined ->
+      ets:new(interscsimulator, [public, set, named_table]);
+    _ ->
+      ok
+  end,
   ets:new(nodes_pids, [public, set, named_table]),
   ets:new(edges_pids, [public, set, named_table]),
   G = digraph:new(),
@@ -55,6 +60,7 @@ populate_graph_links([{V1, V2, Label}|Tail], G) ->
   [{V2, PidV2}] = ets:lookup(nodes_pids, V2), 
   E = digraph:add_edge(G, PidV1, PidV2, Label),
   ets:insert(edges_pids, {{V1, V2}, E}),
+  io:format("~n[ERROR] populating...~n"),
   populate_graph_links(Tail, G).
 
 extract_nodes_from_xml(XmlPath) ->
@@ -107,10 +113,13 @@ mount_link(A) ->
   {permlanes, PermLanes} = lists:keyfind(permlanes, 1, A),
   {oneway, Oneway} = lists:keyfind(oneway, 1, A),
   {modes, Modes} = lists:keyfind(modes, 1, A),
-  {From, To, {Id, Length, FreeSpeed, Capacity, PermLanes, Oneway, Modes}}.
+  {FloatFreeSpeed, _Rest} = string:to_float(FreeSpeed),
+  {FloatLength, _Rest} = string:to_float(Length),
+  {From, To, {Id, FloatLength, FloatFreeSpeed, Capacity, PermLanes, Oneway, Modes}}.
 
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
-onFirstDiasca(State, _SendingActorPid) ->
+onFirstDiasca(State, SendingActorPid) ->
+  io:format("~n[INFO] Sending Actor Pid of Graph: ~p~n", [SendingActorPid]),
   [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
   io:format("[INFO] My graph: ~p~n", [G]),
   N = digraph:vertices(G),
@@ -133,7 +142,6 @@ calculate_bfs(State, {Origin, Destination}, WhoPid) ->
       io:format("~n[INFO] Path found!~n"),
       class_Actor:send_actor_message(WhoPid, {update_path, [Path]}, State)
   end,
-  io:format("[E] S1: ~n"),
   ?wooper_return_state_only(S1).
 
 is_ready(State, WhoPid) ->
