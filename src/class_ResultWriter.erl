@@ -28,7 +28,6 @@ construct(State, ?wooper_construct_parameters) ->
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->
-  io:format("~nTERMINANDO O RESULT WRITER!~n"),
   FilePtr = getAttribute(State, file_ptr),
 	file_utils:close(FilePtr),
 	State.
@@ -39,20 +38,18 @@ onFirstDiasca(State, _SendingActorPid) ->
 	filelib:ensure_dir(FilePath),
 	FilePtr = file_utils:open(FilePath, _Opts=[write, delayed_write]),
   S1 = setAttribute(State, file_ptr, FilePtr),
-  io:format("~nEXECUTE ONE WAY RESULT WRITER~n"),
   T = class_Actor:get_current_tick_offset(State),
+	B = io_lib:format("length;start_time;id;last_tick;origin;destination\n", []),
+	file_utils:write(FilePtr, B),
 	executeOneway(S1, addSpontaneousTick, T+1000).
 
 append_to_output(State, Payload, WhoPid) ->
-  io:format("~n[INFO] Appending to output!~n"),
-  {Type, Len, ST, Id, LastTick} = Payload,
-	B = io_lib:format("~w;~w;~w;~w;~w\n", [Type, Len, ST, Id, LastTick]),
+  {Len, ST, Id, LastTick, V1, V2} = Payload,
+	B = io_lib:format("~w;~w;~s;~w;~s;~s\n", [Len, ST, Id, LastTick, V1, V2]),
   FilePtr = getAttribute(State, file_ptr),
 	file_utils:write(FilePtr, B),
   class_Actor:send_actor_message(WhoPid, {receive_append_result, success}, State).
 
 -spec actSpontaneous(wooper:state()) -> oneway_return().
 actSpontaneous(State) ->
-  CurrentTick = class_Actor:get_current_tick_offset(State),
-  io:format("~n[INFO] Current Tick at result writer: ~p~n", [CurrentTick]),
   ?wooper_return_state_only(State).

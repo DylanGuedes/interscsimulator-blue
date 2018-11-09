@@ -1,9 +1,7 @@
 -module(class_CityGraph).
 
 -define(wooper_superclasses, [class_Actor]).
-
 -define(wooper_construct_parameters, ActorSettings, VerticesPath, EdgesPath).
-
 -define(wooper_construct_export, new/3, new_link/3,
 		 synchronous_new/3, synchronous_new_link/3,
 		 synchronous_timed_new/3, synchronous_timed_new_link/3,
@@ -11,11 +9,9 @@
 		 remote_synchronous_new_link/4, remote_synchronisable_new_link/4,
 		 remote_synchronous_timed_new/4, remote_synchronous_timed_new_link/4,
 		 construct/4, destruct/1).
-
 -define(wooper_method_export, onFirstDiasca/2, calculate_bfs/3, is_ready/2).
 
 -include("smart_city_test_types.hrl").
-
 -include("wooper.hrl").
 
 -spec construct(wooper:state(), class_Actor:actor_settings(),
@@ -55,12 +51,10 @@ populate_graph_nodes([{Id, _X, _Y}|T], G) ->
 populate_graph_links([], _G) ->
   ok;
 populate_graph_links([{V1, V2, Label}|Tail], G) ->
-  io:format("~n[ERROR] Inserting V1, v2 = (~p, ~p)~n", [V1, V2]),
   [{V1, PidV1}] = ets:lookup(nodes_pids, V1),
   [{V2, PidV2}] = ets:lookup(nodes_pids, V2), 
   E = digraph:add_edge(G, PidV1, PidV2, Label),
   ets:insert(edges_pids, {{V1, V2}, E}),
-  io:format("~n[ERROR] populating...~n"),
   populate_graph_links(Tail, G).
 
 extract_nodes_from_xml(XmlPath) ->
@@ -118,18 +112,10 @@ mount_link(A) ->
   {From, To, {Id, FloatLength, FloatFreeSpeed, Capacity, PermLanes, Oneway, Modes}}.
 
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
-onFirstDiasca(State, SendingActorPid) ->
-  io:format("~n[INFO] Sending Actor Pid of Graph: ~p~n", [SendingActorPid]),
-  [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
-  io:format("[INFO] My graph: ~p~n", [G]),
-  N = digraph:vertices(G),
-  L = digraph:edges(G),
-  io:format("[INFO] Nodes: ~p~n", [N]),
-  io:format("[INFO] Links: ~p~n", [L]),
+onFirstDiasca(State, _SendingActorPid) ->
 	?wooper_return_state_only(State).
 
 calculate_bfs(State, {Origin, Destination}, WhoPid) ->
-  io:format("~n[INFO] (From: CityGraph) -> Calculating Bfs~n"),
   [{Origin, U}] = ets:lookup(nodes_pids, Origin),
   [{Destination, V}] = ets:lookup(nodes_pids, Destination),
   [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
@@ -139,7 +125,6 @@ calculate_bfs(State, {Origin, Destination}, WhoPid) ->
       io:format("~n[ERROR] No path is possible from ~p to ~p~n", [Origin, Destination]),
       class_Actor:send_actor_message(WhoPid, {update_path, error}, State);
     _ ->
-      io:format("~n[INFO] Path found!~n"),
       class_Actor:send_actor_message(WhoPid, {update_path, [Path]}, State)
   end,
   ?wooper_return_state_only(S1).

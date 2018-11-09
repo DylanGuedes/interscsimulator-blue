@@ -1,12 +1,10 @@
 { class_ResultWriter, ["/sim-diasca/mock-simulators/smart_city_model/output/output.xml"] }.
 { class_CityGraph, ["/sim-diasca/mock-simulators/smart_city_model/simple_scenario/nodes.xml", "/sim-diasca/mock-simulators/smart_city_model/simple_scenario/links.xml"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
-{ class_Car, ["1", "1", "3", "1", 3, "car", "false", "false", "abc"] }.
+{ class_Car, [#{id => "1", origin => "1", destination => "2", start_time => 3} ] }.
+{ class_Car, [#{id => "2", origin => "1", destination => "3", start_time => 3} ] }.
+{ class_Car, [#{id => "3", origin => "1", destination => "4", start_time => 3} ] }.
+{ class_Car, [#{id => "4", origin => "1", destination => "5", start_time => 3} ] }.
+{ class_Car, [#{id => "5", origin => "1", destination => "6", start_time => 3} ] }.
+{ class_Car, [#{id => "6", origin => "1", destination => "7", start_time => 3} ] }.
+{ class_Car, [#{id => "7", origin => "1", destination => "8", start_time => 3} ] }.
+{ class_Car, [#{id => "8", origin => "1", destination => "9", start_time => 3} ] }.
