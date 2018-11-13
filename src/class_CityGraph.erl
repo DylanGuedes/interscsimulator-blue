@@ -9,7 +9,7 @@
 		 remote_synchronous_new_link/4, remote_synchronisable_new_link/4,
 		 remote_synchronous_timed_new/4, remote_synchronous_timed_new_link/4,
 		 construct/4, destruct/1).
--define(wooper_method_export, onFirstDiasca/2, calculate_bfs/3, is_ready/2).
+-define(wooper_method_export, onFirstDiasca/2, calculate_bfs/3, is_ready/2, update_capacity/3).
 
 -include("smart_city_test_types.hrl").
 -include("wooper.hrl").
@@ -18,23 +18,28 @@
                 string(), string()) -> wooper:state().
 construct(State, ?wooper_construct_parameters) ->
 	ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
-	setAttributes(ActorState, [{status, not_ready}]),
+	UpdatedState = setAttribute(ActorState, status, not_ready),
   case ets:info(interscsimulator) of
     undefined ->
+      io:format("~n[INFO] Creating Table `interscsimulator` in actor CityGraph.~n"),
       ets:new(interscsimulator, [public, set, named_table]);
     _ ->
       ok
   end,
   ets:new(nodes_pids, [public, set, named_table]),
+  io:format("~n[INFO] Creating Table `nodes_pids` in actor CityGraph.~n"),
   ets:new(edges_pids, [public, set, named_table]),
+  io:format("~n[INFO] Creating Table `edges_pids` in actor CityGraph.~n"),
   G = digraph:new(),
   Nodes = extract_nodes_from_xml(VerticesPath),
   Links = extract_links_from_xml(EdgesPath),
   populate_graph_nodes(Nodes, G),
   populate_graph_links(Links, G),
   ets:insert(interscsimulator, {graph_pid, G}),
+  io:format("~n[INFO] Inserting in table `interscsimulator` value `graph_pid`.~n"),
   ets:insert(interscsimulator, {city_graph_pid, self()}),
-	setAttributes(ActorState, [{status, ready}]).
+  io:format("~n[INFO] Inserting in table `interscsimulator` value `city_graph_pid`.~n"),
+	setAttribute(UpdatedState, status, ready).
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->
@@ -109,7 +114,8 @@ mount_link(A) ->
   {modes, Modes} = lists:keyfind(modes, 1, A),
   {FloatFreeSpeed, _Rest} = string:to_float(FreeSpeed),
   {FloatLength, _Rest} = string:to_float(Length),
-  {From, To, {Id, FloatLength, FloatFreeSpeed, Capacity, PermLanes, Oneway, Modes}}.
+  {IntCapacity, _} = string:to_integer(Capacity),
+  {From, To, {Id, FloatLength, FloatFreeSpeed, IntCapacity, PermLanes, Oneway, Modes}}.
 
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
 onFirstDiasca(State, _SendingActorPid) ->
@@ -136,3 +142,14 @@ is_ready(State, WhoPid) ->
     _ ->
       class_Actor:send_actor_message(WhoPid, {wait_please}, State)
   end.
+
+update_capacity(State, {V1Idx, V2Idx, Factor}, _WhoPid) ->
+  io:format("~n[ERROR] V1Idx: ~p, V2idx: ~p, Factor: ~p", [V1Idx, V2Idx, Factor]),
+  [{{V1Idx, V2Idx}, E}] = ets:lookup(edges_pids, {V1Idx, V2Idx}),
+  [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
+  {E, V1_vtx, V2_vtx, Label} = digraph:edge(G, E),
+  {X1, X2, X3, Capacity, X5, X6, X7} = Label,
+  io:format("~n[INFO] LABEL: ~p~n", [Label]),
+  NewLabel = {X1, X2, X3, Capacity + Factor, X5, X6, X7},
+  digraph:add_edge(G, E, V1_vtx, V2_vtx, NewLabel),
+	?wooper_return_state_only(State).

@@ -21,10 +21,7 @@ run() ->
     initialisation_files = ["trips.init"]
   },
 
-
 	DeploymentSettings = #deployment_settings{
-    computing_hosts = { use_host_file_otherwise_local,
-              "sim-diasca-host-candidates.txt" },
     additional_elements_to_deploy = [ { ".", code } ],
     enable_performance_tracker = false
   },
