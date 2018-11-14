@@ -7,4 +7,27 @@
 { class_Car, [#{id => "5", origin => "1", destination => "6", start_time => 3} ] }.
 { class_Car, [#{id => "6", origin => "1", destination => "7", start_time => 3} ] }.
 { class_Car, [#{id => "7", origin => "1", destination => "8", start_time => 3} ] }.
-{ class_Car, [#{id => "8", origin => "1", destination => "9", start_time => 3} ] }.
+
+{ class_Car, [#{id => "1", origin => "1", destination => "2", start_time => 4} ] }.
+{ class_Car, [#{id => "2", origin => "1", destination => "3", start_time => 4} ] }.
+{ class_Car, [#{id => "3", origin => "1", destination => "4", start_time => 4} ] }.
+{ class_Car, [#{id => "4", origin => "1", destination => "5", start_time => 4} ] }.
+{ class_Car, [#{id => "5", origin => "1", destination => "6", start_time => 4} ] }.
+{ class_Car, [#{id => "6", origin => "1", destination => "7", start_time => 4} ] }.
+{ class_Car, [#{id => "7", origin => "1", destination => "8", start_time => 4} ] }.
+
+{ class_Car, [#{id => "1", origin => "1", destination => "2", start_time => 5} ] }.
+{ class_Car, [#{id => "2", origin => "1", destination => "3", start_time => 5} ] }.
+{ class_Car, [#{id => "3", origin => "1", destination => "4", start_time => 5} ] }.
+{ class_Car, [#{id => "4", origin => "1", destination => "5", start_time => 5} ] }.
+{ class_Car, [#{id => "5", origin => "1", destination => "6", start_time => 5} ] }.
+{ class_Car, [#{id => "6", origin => "1", destination => "7", start_time => 5} ] }.
+{ class_Car, [#{id => "7", origin => "1", destination => "8", start_time => 5} ] }.
+
+{ class_Car, [#{id => "1", origin => "1", destination => "2", start_time => 6} ] }.
+{ class_Car, [#{id => "2", origin => "1", destination => "3", start_time => 6} ] }.
+{ class_Car, [#{id => "3", origin => "1", destination => "4", start_time => 6} ] }.
+{ class_Car, [#{id => "4", origin => "1", destination => "5", start_time => 6} ] }.
+{ class_Car, [#{id => "5", origin => "1", destination => "6", start_time => 6} ] }.
+{ class_Car, [#{id => "6", origin => "1", destination => "7", start_time => 6} ] }.
+{ class_Car, [#{id => "7", origin => "1", destination => "8", start_time => 6} ] }.

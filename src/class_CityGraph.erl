@@ -1,5 +1,8 @@
 -module(class_CityGraph).
 
+-import('interscsimulator_utils', [print_error/2, print_info/2,
+                                   print_success/2, print_info/1]).
+
 -define(wooper_superclasses, [class_Actor]).
 -define(wooper_construct_parameters, ActorSettings, VerticesPath, EdgesPath).
 -define(wooper_construct_export, new/3, new_link/3,
@@ -14,31 +17,36 @@
 -include("smart_city_test_types.hrl").
 -include("wooper.hrl").
 
+create_ets_table(TableName, TableArgs) ->
+  case ets:new(TableName, TableArgs) of
+    TableName ->
+      print_success("Sucessfully created ETS table ~p in actor ~p.", [TableName, "CityGraph"]);
+    _ ->
+      print_error("Couldn't create ETS table ~p in actor ~p.", [TableName, "CityGraph"])
+  end.
+
 -spec construct(wooper:state(), class_Actor:actor_settings(),
                 string(), string()) -> wooper:state().
 construct(State, ?wooper_construct_parameters) ->
 	ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
 	UpdatedState = setAttribute(ActorState, status, not_ready),
+
   case ets:info(interscsimulator) of
     undefined ->
-      io:format("~n[INFO] Creating Table `interscsimulator` in actor CityGraph.~n"),
-      ets:new(interscsimulator, [public, set, named_table]);
-    _ ->
-      ok
+      create_ets_table(interscsimulator, [public, set, named_table])
   end,
-  ets:new(nodes_pids, [public, set, named_table]),
-  io:format("~n[INFO] Creating Table `nodes_pids` in actor CityGraph.~n"),
-  ets:new(edges_pids, [public, set, named_table]),
-  io:format("~n[INFO] Creating Table `edges_pids` in actor CityGraph.~n"),
+
+  create_ets_table(nodes_pids, [public, set, named_table]),
+  create_ets_table(edges_pids, [public, set, named_table]),
   G = digraph:new(),
   Nodes = extract_nodes_from_xml(VerticesPath),
   Links = extract_links_from_xml(EdgesPath),
   populate_graph_nodes(Nodes, G),
   populate_graph_links(Links, G),
   ets:insert(interscsimulator, {graph_pid, G}),
-  io:format("~n[INFO] Inserting in table `interscsimulator` value `graph_pid`.~n"),
+  print_info("Inserting in table `interscsimulator` value `graph_pid`."),
   ets:insert(interscsimulator, {city_graph_pid, self()}),
-  io:format("~n[INFO] Inserting in table `interscsimulator` value `city_graph_pid`.~n"),
+  print_info("Inserting in table `interscsimulator` value `city_graph_pid`."),
 	setAttribute(UpdatedState, status, ready).
 
 -spec destruct(wooper:state()) -> wooper:state().
@@ -128,7 +136,7 @@ calculate_bfs(State, {Origin, Destination}, WhoPid) ->
   Path = digraph:get_short_path(G, U, V),
   S1 = case Path of
     false ->
-      io:format("~n[ERROR] No path is possible from ~p to ~p~n", [Origin, Destination]),
+      print_error("No path is possible from ~p to ~p~n", [Origin, Destination]),
       class_Actor:send_actor_message(WhoPid, {update_path, error}, State);
     _ ->
       class_Actor:send_actor_message(WhoPid, {update_path, [Path]}, State)
@@ -144,12 +152,11 @@ is_ready(State, WhoPid) ->
   end.
 
 update_capacity(State, {V1Idx, V2Idx, Factor}, _WhoPid) ->
-  io:format("~n[ERROR] V1Idx: ~p, V2idx: ~p, Factor: ~p", [V1Idx, V2Idx, Factor]),
   [{{V1Idx, V2Idx}, E}] = ets:lookup(edges_pids, {V1Idx, V2Idx}),
   [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
   {E, V1_vtx, V2_vtx, Label} = digraph:edge(G, E),
   {X1, X2, X3, Capacity, X5, X6, X7} = Label,
-  io:format("~n[INFO] LABEL: ~p~n", [Label]),
   NewLabel = {X1, X2, X3, Capacity + Factor, X5, X6, X7},
+  print_info("Updating capacity to ~p+(~p) for edge (~p)->(~p)", [Capacity, Factor, V1Idx, V2Idx]),
   digraph:add_edge(G, E, V1_vtx, V2_vtx, NewLabel),
 	?wooper_return_state_only(State).

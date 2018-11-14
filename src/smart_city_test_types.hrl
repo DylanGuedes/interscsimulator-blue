@@ -15,5 +15,3 @@
 -type value() ::  float().
 -type graph() :: digraph:graph().
 -type file() :: file:io_device().
-
-
