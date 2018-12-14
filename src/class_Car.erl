@@ -52,7 +52,7 @@ destruct(State) ->
   State.
 
 -spec actSpontaneous(wooper:state()) -> oneway_return().
-actSpontaneous(State) ->	
+actSpontaneous(State) ->
   Status = getAttribute(State, status),
   case Status of
     wait ->
@@ -163,11 +163,20 @@ do_not_walk(State) ->
   print_info("Waiting in tick ~p", [T]),
   executeOneway(State, addSpontaneousTick, T+1).
 
-walk(State, {_, ELength, EFreeSpeed, _, _, _, _}=_Label) when is_float(ELength), is_float(EFreeSpeed) ->
+float_to_string(Float) ->
+  io_lib:format("~p", [Float]).
+
+walk(State, {EId, ELength, EFreeSpeed, ECapacity, _, _, _}=_Label) when is_float(ELength), is_float(EFreeSpeed) ->
   UpdatedState = setAttribute(State, current_edge_length, ELength),
   ElapsedTime = max(1, round(ELength / EFreeSpeed)),
   T = class_Actor:get_current_tick_offset(UpdatedState),
-  executeOneway(UpdatedState, addSpontaneousTick, T+ElapsedTime).
+  [{result_writer_pid, WPid}] = ets:lookup(interscsimulator, result_writer_pid),
+  io:format("DEBUG] ~p -> ~p -> ~p -> ~p~n", [EId, ELength, EFreeSpeed, ECapacity]),
+	Payload = lists:flatten(io_lib:format("~s;~s;~s;~s", [EId, float_to_string(ELength), float_to_string(EFreeSpeed), float_to_string(ECapacity)])),
+  %% PayloadF = <<Payload>>,
+  %% io:format("[DEBUG] pAYLOAD: ~p~n", [PayloadF]),
+  UpdatedState2 = class_Actor:send_actor_message(WPid, {publish_event, list_to_binary(Payload)}, UpdatedState),
+  executeOneway(UpdatedState2, addSpontaneousTick, T+ElapsedTime).
 
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
 onFirstDiasca(State, _SendingActorPid) ->

@@ -12,16 +12,36 @@
 		 remote_synchronous_timed_new/3, remote_synchronous_timed_new_link/3,
 		 construct/3, destruct/1).
 
--define(wooper_method_export, onFirstDiasca/2, append_to_output/3, actSpontaneous/1).
+-define(wooper_method_export, onFirstDiasca/2, append_to_output/3, actSpontaneous/1, publish_event/3).
 
 -include("smart_city_test_types.hrl").
 
 -include("wooper.hrl").
 
+setup_kafka() ->
+  KafkaProtocolPath = "/deps/brod/_build/default/lib/kafka_protocol/ebin",
+  SnappyerPath = "/deps/brod/_build/default/lib/snappyer/ebin",
+  CrcPath = "/deps/brod/_build/default/lib/crc32cer/ebin",
+  Supervisor3Path = "/deps/brod/_build/default/lib/supervisor3/ebin",
+	BrodPath = "/deps/brod/_build/default/lib/brod/ebin",
+  Paths = [BrodPath, KafkaProtocolPath, SnappyerPath, CrcPath, Supervisor3Path],
+  code:add_pathsa(Paths),
+  {ok, _} = application:ensure_all_started(brod),
+  KafkaBootstrapEndpoints = [{"kafka", 9092}],
+  ok = brod:start_client(KafkaBootstrapEndpoints, interscity_connection),
+  brod:start_producer(interscity_connection, <<"simulation-events">>, []).
+
 -spec construct(wooper:state(), class_Actor:actor_settings(),
                 string()) -> wooper:state().
 construct(State, ?wooper_construct_parameters) ->
-  ets:insert(interscsimulator, {result_writer_pid, self()}),
+  setup_kafka(),
+  case ets:info(interscsimulator) of
+    undefined ->
+      ets:new(interscsimulator, [public, set, named_table]),
+      ets:insert(interscsimulator, {result_writer_pid, self()});
+    _ ->
+      ets:insert(interscsimulator, {result_writer_pid, self()})
+  end,
 	ActorState = class_Actor:construct(State, ActorSettings, "Trips Result Writer"),
 	setAttributes(ActorState, [
     {status, not_ready}, {final_path, FinalPath}, {file_ptr, -1}]).
@@ -49,6 +69,12 @@ append_to_output(State, Payload, WhoPid) ->
   FilePtr = getAttribute(State, file_ptr),
 	file_utils:write(FilePtr, B),
   class_Actor:send_actor_message(WhoPid, {receive_append_result, success}, State).
+
+publish_event(State, Payload, _WhoPid) ->
+  Client = interscity_connection,
+  Topic  = <<"simulation-events">>,
+  brod:produce_sync(Client, Topic, 0, <<"event">>, Payload),
+  ?wooper_return_state_only(State).
 
 -spec actSpontaneous(wooper:state()) -> oneway_return().
 actSpontaneous(State) ->

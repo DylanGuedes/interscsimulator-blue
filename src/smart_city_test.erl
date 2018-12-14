@@ -3,22 +3,23 @@
 -module(smart_city_test).
 
 % For all facilities common to all tests:
--include("test_constructs.hrl").	
+-include("test_constructs.hrl").
 
-readConfigPath() ->
-	{ok, Device} = file:open('../interscsimulator.conf', [read]),
-	{ok, Data} = file:read_line(Device),
-	string:chomp(Data).
+%% readConfigPath() ->
+%% 	{ok, Device} = file:open('../interscsimulator.conf', [read]),
+%% 	{ok, Data} = file:read_line(Device),
+%% 	string:chomp(Data).
 
 -spec run() -> no_return().
-run() ->	
+run() ->
 	?test_start,
-	
+
 	% Use default simulation settings (50Hz, batch reproducible):
 	SimulationSettings = #simulation_settings{
     simulation_name = "Sim-Diasca Smart City Integration Test",
-    tick_duration = 1,
-    initialisation_files = ["trips.init"]
+    initialisation_files = ["../assets/simulation_input/trips.init"],
+    interactivity_mode = interactive,
+    tick_duration = 1.0
   },
 
 	DeploymentSettings = #deployment_settings{
@@ -32,11 +33,11 @@ run() ->
 	% A deployment manager is created directly on the user node:
   DeploymentManagerPid = sim_diasca:init( SimulationSettings, DeploymentSettings, LoadBalancingSettings ),
 
-	ConfigPath = readConfigPath(),
+	%% ConfigPath = readConfigPath(),
 
-	Config = config_parser:load_config_from_xml( ConfigPath ),
+	%% Config = config_parser:load_config_from_xml( ConfigPath ),
 
-	SimulationDuration = element( 1 , string:to_integer(element( 2 , Config ) ) ),
+	SimulationDuration = 100, % how many ticks? (in seconds)
 
 	DeploymentManagerPid ! { getRootTimeManager, [], self() },
 	RootTimeManagerPid = test_receive(),
