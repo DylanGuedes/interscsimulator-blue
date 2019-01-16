@@ -38,6 +38,7 @@ construct(State, ?wooper_construct_parameters) ->
 
   create_ets_table(nodes_pids, [public, set, named_table]),
   create_ets_table(edges_pids, [public, set, named_table]),
+  create_ets_table(forbidden_edges, [public, set, named_table]),
   G = digraph:new(),
   Nodes = extract_nodes_from_xml(VerticesPath),
   Links = extract_links_from_xml(EdgesPath),

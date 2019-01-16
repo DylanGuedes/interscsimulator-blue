@@ -1,4 +1,3 @@
-%Class that represents a person that can moves around the city graph on foot or by car
 -module(class_Car).
 
 -import('interscsimulator_utils', [print_error/2, print_info/2,
@@ -87,7 +86,7 @@ finish_trip(State) ->
   RWP = getAttribute(State, writer_pid),
   CurEdgeLen = getAttribute(State, current_edge_length),
   LastTick = class_Actor:get_current_tick_offset(State),
-  R = {Len+CurEdgeLen, ST, Id, LastTick, V1, V2},
+  R = {Id, Len+CurEdgeLen, ST, LastTick, V1, V2},
   UpdatedState = setAttribute(State, status, finished),
   S1 = class_Actor:send_actor_message(RWP, {append_to_output, R}, UpdatedState),
   ?wooper_return_state_only(S1).
@@ -99,22 +98,41 @@ resolve_path(State) ->
   [{city_graph_pid, GPid}] = ets:lookup(interscsimulator, city_graph_pid),
   class_Actor:send_actor_message(GPid, {calculate_bfs, {V1Idx, V2Idx}}, State).
 
+forbidden_edge(V1_vtx, V2_vtx) ->
+  [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
+  {V1_vtx, V1Label} = digraph:vertex(G, V1_vtx),
+  {V2_vtx, V2Label} = digraph:vertex(G, V2_vtx),
+  [V1Idx] = V1Label,
+  [V2Idx] = V2Label,
+  [{{V1Idx, V2Idx}, E}] = ets:lookup(edges_pids, {V1Idx, V2Idx}),
+  {E, V1_vtx, V2_vtx, L} = digraph:edge(G, E),
+  {Id, _, _, _, _, _, _} = L,
+  case ets:lookup(forbidden_edges, Id) of
+    [{forbidden_edges, Id}] ->
+      io:format("Edge with id ~p  is forbidden!!~n", [Id]),
+      true;
+    _ ->
+      false
+  end.
+
 % jump to next node
 next_hop(State) ->
   RemainingNodes = getAttribute(State, remaining_nodes),
-  %% io:format("~n[INFO] Summing distance...~n"),
 
   case RemainingNodes of
     [] ->
       CurrentEdgeLength = getAttribute(State, current_edge_length),
       Distance = getAttribute(State, distance),
       LastState = setAttribute(State, distance, Distance + CurrentEdgeLength),
-      io:format("~n[INFO] SET `distance` TO ~p~n", [Distance+CurrentEdgeLength]),
       finish_trip(LastState);
 
     [Current_vtx, Next_vtx | T] ->
-      handle_trip_walk(State, Current_vtx, Next_vtx, [Next_vtx|T]);
-
+      case forbidden_edge(Current_vtx, Next_vtx) of
+        true ->
+          io:format("[E] FORBIDDEN EDGE!!!~n");
+        false ->
+          handle_trip_walk(State, Current_vtx, Next_vtx, [Next_vtx|T])
+      end;
     _ ->
       finish_trip(State)
   end.
@@ -171,11 +189,8 @@ walk(State, {EId, ELength, EFreeSpeed, ECapacity, _, _, _}=_Label) when is_float
   ElapsedTime = max(1, round(ELength / EFreeSpeed)),
   T = class_Actor:get_current_tick_offset(UpdatedState),
   [{result_writer_pid, WPid}] = ets:lookup(interscsimulator, result_writer_pid),
-  io:format("DEBUG] ~p -> ~p -> ~p -> ~p~n", [EId, ELength, EFreeSpeed, ECapacity]),
-	Payload = lists:flatten(io_lib:format("~s;~s;~s;~s", [EId, float_to_string(ELength), float_to_string(EFreeSpeed), float_to_string(ECapacity)])),
-  %% PayloadF = <<Payload>>,
-  %% io:format("[DEBUG] pAYLOAD: ~p~n", [PayloadF]),
-  UpdatedState2 = class_Actor:send_actor_message(WPid, {publish_event, list_to_binary(Payload)}, UpdatedState),
+	Payload = lists:flatten(io_lib:format("~s;~s;~s;~s;~p", [EId, float_to_string(ELength), float_to_string(EFreeSpeed), float_to_string(ECapacity), T])),
+  UpdatedState2 = class_Actor:send_actor_message(WPid, {publish_event, {list_to_binary(Payload), <<"edge_update">>}}, UpdatedState),
   executeOneway(UpdatedState2, addSpontaneousTick, T+ElapsedTime).
 
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().

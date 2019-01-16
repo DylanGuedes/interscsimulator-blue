@@ -27,7 +27,7 @@ setup_kafka() ->
   Paths = [BrodPath, KafkaProtocolPath, SnappyerPath, CrcPath, Supervisor3Path],
   code:add_pathsa(Paths),
   {ok, _} = application:ensure_all_started(brod),
-  KafkaBootstrapEndpoints = [{"kafka", 9092}],
+  KafkaBootstrapEndpoints = [{"interscity-kafka", 9092}],
   ok = brod:start_client(KafkaBootstrapEndpoints, interscity_connection),
   brod:start_producer(interscity_connection, <<"simulation-events">>, []).
 
@@ -48,6 +48,10 @@ construct(State, ?wooper_construct_parameters) ->
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->
+  close_results_file(State).
+
+-spec close_results_file(wooper:state()) -> wooper:state().
+close_results_file(State) ->
   FilePtr = getAttribute(State, file_ptr),
 	file_utils:close(FilePtr),
 	State.
@@ -59,21 +63,21 @@ onFirstDiasca(State, _SendingActorPid) ->
 	FilePtr = file_utils:open(FilePath, _Opts=[write, delayed_write]),
   S1 = setAttribute(State, file_ptr, FilePtr),
   T = class_Actor:get_current_tick_offset(State),
-	B = io_lib:format("length;start_time;id;last_tick;origin;destination\n", []),
+	B = io_lib:format("id;length;start_time;last_tick;origin;destination\n", []),
 	file_utils:write(FilePtr, B),
 	executeOneway(S1, addSpontaneousTick, T+1000).
 
 append_to_output(State, Payload, WhoPid) ->
-  {Len, ST, Id, LastTick, V1, V2} = Payload,
-	B = io_lib:format("~w;~w;~s;~w;~s;~s\n", [Len, ST, Id, LastTick, V1, V2]),
+  {Id, Len, ST, LastTick, V1, V2} = Payload,
+	B = io_lib:format("~s;~w;~w;~w;~s;~s\n", [Id, Len, ST, LastTick, V1, V2]),
   FilePtr = getAttribute(State, file_ptr),
 	file_utils:write(FilePtr, B),
   class_Actor:send_actor_message(WhoPid, {receive_append_result, success}, State).
 
-publish_event(State, Payload, _WhoPid) ->
+publish_event(State, {Payload, EventType}, _WhoPid) ->
   Client = interscity_connection,
   Topic  = <<"simulation-events">>,
-  brod:produce_sync(Client, Topic, 0, <<"event">>, Payload),
+  brod:produce_sync(Client, Topic, 0, EventType, Payload),
   ?wooper_return_state_only(State).
 
 -spec actSpontaneous(wooper:state()) -> oneway_return().
