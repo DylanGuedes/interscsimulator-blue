@@ -95,25 +95,28 @@ finish_trip(State) ->
 resolve_path(State) ->
   V1Idx = getAttribute(State, origin_idx),
   V2Idx = getAttribute(State, destination_idx),
-  [{city_graph_pid, GPid}] = ets:lookup(interscsimulator, city_graph_pid),
+  GPid = whereis(city_graph_singleton),
   class_Actor:send_actor_message(GPid, {calculate_bfs, {V1Idx, V2Idx}}, State).
 
-forbidden_edge(V1_vtx, V2_vtx) ->
-  [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
-  {V1_vtx, V1Label} = digraph:vertex(G, V1_vtx),
-  {V2_vtx, V2Label} = digraph:vertex(G, V2_vtx),
-  [V1Idx] = V1Label,
-  [V2Idx] = V2Label,
-  [{{V1Idx, V2Idx}, E}] = ets:lookup(edges_pids, {V1Idx, V2Idx}),
-  {E, V1_vtx, V2_vtx, L} = digraph:edge(G, E),
-  {Id, _, _, _, _, _, _} = L,
-  case ets:lookup(forbidden_edges, Id) of
-    [{forbidden_edges, Id}] ->
-      io:format("Edge with id ~p  is forbidden!!~n", [Id]),
-      true;
-    _ ->
-      false
-  end.
+forbidden_edge(_V1_vtx, _V2_vtx) ->
+  false.
+  %% TODO> Commented this one out because it relies on ETS. ETS CAN'T BE
+  %% DISTRIBUTED.
+  %% [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
+  %% {V1_vtx, V1Label} = digraph:vertex(G, V1_vtx),
+  %% {V2_vtx, V2Label} = digraph:vertex(G, V2_vtx),
+  %% [V1Idx] = V1Label,
+  %% [V2Idx] = V2Label,
+  %% [{{V1Idx, V2Idx}, E}] = ets:lookup(edges_pids, {V1Idx, V2Idx}),
+  %% {E, V1_vtx, V2_vtx, L} = digraph:edge(G, E),
+  %% {Id, _, _, _, _, _, _} = L,
+  %% case ets:lookup(forbidden_edges, Id) of
+  %%   [{forbidden_edges, Id}] ->
+  %%     io:format("Edge with id ~p  is forbidden!!~n", [Id]),
+  %%     true;
+  %%   _ ->
+  %%     false
+  %% end.
 
 % jump to next node
 next_hop(State) ->
@@ -172,7 +175,7 @@ handle_trip_walk(State, CurrentNode_vtx, NextNode_vtx, RemainingNodes) ->
 
 % Updates capacity of edge label by factor. i.e: you can decrease or increase
 update_capacity(State, V1Idx, V2Idx, Factor) when is_list(V1Idx), is_list(V2Idx), is_integer(Factor) ->
-  [{city_graph_pid, GraphManagerPid}] = ets:lookup(interscsimulator, city_graph_pid),
+  GraphManagerPid = whereis(city_graph_singleton),
   class_Actor:send_actor_message(GraphManagerPid, {update_capacity, {V1Idx, V2Idx, Factor}}, State).
 
 % Just wait til next tick
@@ -188,7 +191,7 @@ walk(State, {EId, ELength, EFreeSpeed, ECapacity, _, _, _}=_Label) when is_float
   UpdatedState = setAttribute(State, current_edge_length, ELength),
   ElapsedTime = max(1, round(ELength / EFreeSpeed)),
   T = class_Actor:get_current_tick_offset(UpdatedState),
-  [{result_writer_pid, WPid}] = ets:lookup(interscsimulator, result_writer_pid),
+  WPid = whereis(result_writer_singleton),
 	Payload = lists:flatten(io_lib:format("~s;~s;~s;~s;~p", [EId, float_to_string(ELength), float_to_string(EFreeSpeed), float_to_string(ECapacity), T])),
   UpdatedState2 = class_Actor:send_actor_message(WPid, {publish_event, {list_to_binary(Payload), <<"edge_update">>}}, UpdatedState),
   executeOneway(UpdatedState2, addSpontaneousTick, T+ElapsedTime).
@@ -199,7 +202,7 @@ onFirstDiasca(State, _SendingActorPid) ->
   CurrentTick = class_Actor:get_current_tick_offset(State),
   FirstActionTime = CurrentTick + StartTime,
 	NewState = setAttribute(State, start_time, FirstActionTime),
-  [{result_writer_pid, WPid}] = ets:lookup(interscsimulator, result_writer_pid),
+  WPid = whereis(result_writer_singleton),
   S2 = setAttribute(NewState, writer_pid, WPid),
 	executeOneway(S2, addSpontaneousTick, FirstActionTime).
 
