@@ -66,7 +66,7 @@ populate_graph_links([], _G) ->
   ok;
 populate_graph_links([{V1, V2, Label}|Tail], G) ->
   [{V1, PidV1}] = ets:lookup(nodes_pids, V1),
-  [{V2, PidV2}] = ets:lookup(nodes_pids, V2), 
+  [{V2, PidV2}] = ets:lookup(nodes_pids, V2),
   E = digraph:add_edge(G, PidV1, PidV2, Label),
   ets:insert(edges_pids, {{V1, V2}, E}),
   populate_graph_links(Tail, G).

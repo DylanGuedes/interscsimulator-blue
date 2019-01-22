@@ -240,9 +240,14 @@ receive_append_result(State, success, _WhoPid) ->
   executeOneway(State, declareTermination).
 
 update_your_ets(State, {EtsTabl, EtsTablContent}, _WhoPid) ->
-  print_info("Replicating ETS Table ~p on node ~p.", [EtsTabl, node()]),
-  ets:new(EtsTabl, [public, set, named_table]),
-  [ets:insert(EtsTabl, {K, V}) || {K, V} <- EtsTablContent],
+  case ets:info(EtsTabl) of
+    undefined ->
+      ets:new(EtsTabl, [public, set, named_table]),
+      [ets:insert(EtsTabl, {K, V}) || {K, V} <- EtsTablContent, K =/= graph_pid];
+    _ ->
+      [ets:insert(EtsTabl, {K, V}) || {K, V} <- EtsTablContent, K =/= graph_pid],
+      ok
+  end,
   ?wooper_return_state_only(State).
 
 deserialize_digraph({VL, EL, NL, B}) ->
@@ -257,8 +262,21 @@ deserialize_digraph({VL, EL, NL, B}) ->
   ets:insert(V, VL),
   ets:insert(E, EL),
   ets:insert(N, NL),
+  ets:insert(interscsimulator, {graph_pid, DG}),
   {digraph, V, E, N, B}.
 
 update_your_digraph(State, {DigraphPayload}, _WhoPid) ->
-  deserialize_digraph(DigraphPayload),
+  case ets:info(interscsimulator) of
+    undefined ->
+      ets:new(interscsimulator, [public, set, named_table]),
+      print_error("Digraph undefined at node ~p...", [node()]),
+      deserialize_digraph(DigraphPayload);
+    _ ->
+      case ets:lookup(interscsimulator, graph_pid) of
+        [{graph_pid, _G}] ->
+          ok;
+        [] ->
+          deserialize_digraph(DigraphPayload)
+      end
+  end,
   ?wooper_return_state_only(State).
