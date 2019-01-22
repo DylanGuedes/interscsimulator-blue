@@ -19,15 +19,15 @@
 -include("wooper.hrl").
 
 setup_kafka() ->
-  KafkaProtocolPath = "/deps/brod/_build/default/lib/kafka_protocol/ebin",
-  SnappyerPath = "/deps/brod/_build/default/lib/snappyer/ebin",
-  CrcPath = "/deps/brod/_build/default/lib/crc32cer/ebin",
-  Supervisor3Path = "/deps/brod/_build/default/lib/supervisor3/ebin",
-	BrodPath = "/deps/brod/_build/default/lib/brod/ebin",
+  KafkaProtocolPath = "../deps/brod/_build/default/lib/kafka_protocol/ebin",
+  SnappyerPath = "../deps/brod/_build/default/lib/snappyer/ebin",
+  CrcPath = "../deps/brod/_build/default/lib/crc32cer/ebin",
+  Supervisor3Path = "../deps/brod/_build/default/lib/supervisor3/ebin",
+	BrodPath = "../deps/brod/_build/default/lib/brod/ebin",
   Paths = [BrodPath, KafkaProtocolPath, SnappyerPath, CrcPath, Supervisor3Path],
   code:add_pathsa(Paths),
   {ok, _} = application:ensure_all_started(brod),
-  KafkaBootstrapEndpoints = [{"interscity-kafka", 9092}],
+  KafkaBootstrapEndpoints = [{"172.24.0.71", 9092}],
   ok = brod:start_client(KafkaBootstrapEndpoints, interscity_connection),
   brod:start_producer(interscity_connection, <<"simulation-events">>, []).
 
