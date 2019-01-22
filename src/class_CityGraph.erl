@@ -11,7 +11,7 @@
 		 remote_new/4, remote_new_link/4, remote_synchronous_new/4,
 		 remote_synchronous_new_link/4, remote_synchronisable_new_link/4,
 		 remote_synchronous_timed_new/4, remote_synchronous_timed_new_link/4,
-		 construct/4, destruct/1).
+		 construct/4, destruct/1, send_me_ets/3, send_me_digraph/3).
 -define(wooper_method_export, onFirstDiasca/2, calculate_bfs/3, is_ready/2, update_capacity/3).
 
 -include("smart_city_test_types.hrl").
@@ -46,7 +46,7 @@ construct(State, ?wooper_construct_parameters) ->
   populate_graph_links(Links, G),
   ets:insert(interscsimulator, {graph_pid, G}),
   print_info("Inserting in table `interscsimulator` value `graph_pid`."),
-  ets:insert(interscsimulator, {city_graph_pid, self()}),
+  global:register_name(singleton_city_graph, self()),
   print_info("Inserting in table `interscsimulator` value `city_graph_pid`."),
 	setAttribute(UpdatedState, status, ready).
 
@@ -161,3 +161,18 @@ update_capacity(State, {V1Idx, V2Idx, Factor}, _WhoPid) ->
   print_info("Updating capacity to ~p+(~p) for edge (~p)->(~p)", [Capacity, Factor, V1Idx, V2Idx]),
   digraph:add_edge(G, E, V1_vtx, V2_vtx, NewLabel),
 	?wooper_return_state_only(State).
+
+send_me_ets(State, EtsTabl, WhoPid) ->
+  print_info("send_me_ets ~p call received!", [EtsTabl]),
+  EtsTablContent = ets:match_object(EtsTabl, {'$0', '$1'}),
+  class_Actor:send_actor_message(WhoPid, {update_your_ets, {EtsTabl, EtsTablContent}}, State).
+
+serialize_digraph({digraph, V, E, N, B}) ->
+    {ets:tab2list(V),
+     ets:tab2list(E),
+     ets:tab2list(N), B}.
+
+send_me_digraph(State, _, WhoPid) ->
+  [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
+  Payload = serialize_digraph(G),
+  class_Actor:send_actor_message(WhoPid, {update_your_digraph, {Payload}}, State).

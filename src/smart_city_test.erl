@@ -2,19 +2,9 @@
 
 -include("test_constructs.hrl").
 
--record(singletons, {name, pid}).
--record(vertices, {vtx, pid}).
--record(edges, {v1, v2, pid}).
-
 -spec run() -> no_return().
 run() ->
 	?test_start,
-
-  mnesia:create_schema([node()]),
-  mnesia:start(),
-  mnesia:create_table(singletons, [{attributes, record_info(fields, singleton_pids)}]),
-  mnesia:create_table(vertices, [{attributes, record_info(fields, vertices)}]),
-  mnesia:create_table(edges, [{attributes, record_info(fields, edges)}]),
 
 	SimulationSettings = #simulation_settings{
     simulation_name = "Sim-Diasca Smart City Integration Test",

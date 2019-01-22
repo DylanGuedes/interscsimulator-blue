@@ -35,13 +35,7 @@ setup_kafka() ->
                 string()) -> wooper:state().
 construct(State, ?wooper_construct_parameters) ->
   setup_kafka(),
-  register(result_writer_singleton, self()),
-  case ets:info(interscsimulator) of
-    undefined ->
-      ets:new(interscsimulator, [public, set, named_table]);
-    _ ->
-      ok
-  end,
+  global:register_name(result_writer_singleton, self()),
 	ActorState = class_Actor:construct(State, ActorSettings, "Trips Result Writer"),
 	setAttributes(ActorState, [
     {status, not_ready}, {final_path, FinalPath}, {file_ptr, -1}]).

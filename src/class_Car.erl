@@ -12,7 +12,7 @@
 		 remote_new/3, remote_new_link/3, remote_synchronous_new/3,
 		 remote_synchronous_new_link/3, remote_synchronisable_new_link/3,
 		 remote_synchronous_timed_new/3, remote_synchronous_timed_new_link/3,
-		 construct/3, destruct/1).
+		 construct/3, destruct/1, update_your_ets/3, update_your_digraph/3).
 
 -define(wooper_method_export, actSpontaneous/1, onFirstDiasca/2,
         update_path/3, receive_append_result/3).
@@ -95,7 +95,7 @@ finish_trip(State) ->
 resolve_path(State) ->
   V1Idx = getAttribute(State, origin_idx),
   V2Idx = getAttribute(State, destination_idx),
-  GPid = whereis(city_graph_singleton),
+  GPid = global:whereis_name(singleton_city_graph),
   class_Actor:send_actor_message(GPid, {calculate_bfs, {V1Idx, V2Idx}}, State).
 
 forbidden_edge(_V1_vtx, _V2_vtx) ->
@@ -175,7 +175,7 @@ handle_trip_walk(State, CurrentNode_vtx, NextNode_vtx, RemainingNodes) ->
 
 % Updates capacity of edge label by factor. i.e: you can decrease or increase
 update_capacity(State, V1Idx, V2Idx, Factor) when is_list(V1Idx), is_list(V2Idx), is_integer(Factor) ->
-  GraphManagerPid = whereis(city_graph_singleton),
+  GraphManagerPid = global:whereis_name(singleton_city_graph),
   class_Actor:send_actor_message(GraphManagerPid, {update_capacity, {V1Idx, V2Idx, Factor}}, State).
 
 % Just wait til next tick
@@ -191,20 +191,40 @@ walk(State, {EId, ELength, EFreeSpeed, ECapacity, _, _, _}=_Label) when is_float
   UpdatedState = setAttribute(State, current_edge_length, ELength),
   ElapsedTime = max(1, round(ELength / EFreeSpeed)),
   T = class_Actor:get_current_tick_offset(UpdatedState),
-  WPid = whereis(result_writer_singleton),
+  WPid = global:whereis_name(result_writer_singleton),
 	Payload = lists:flatten(io_lib:format("~s;~s;~s;~s;~p", [EId, float_to_string(ELength), float_to_string(EFreeSpeed), float_to_string(ECapacity), T])),
   UpdatedState2 = class_Actor:send_actor_message(WPid, {publish_event, {list_to_binary(Payload), <<"edge_update">>}}, UpdatedState),
   executeOneway(UpdatedState2, addSpontaneousTick, T+ElapsedTime).
 
+ensure_ets_replication(TablName, State) ->
+  case ets:info(TablName) of
+    undefined ->
+      ask_for_ets_replication(TablName, State);
+    _ ->
+      State
+  end.
+
+ask_for_ets_replication(EtsTabl, State) ->
+  MainProcess = global:whereis_name(singleton_city_graph),
+  class_Actor:send_actor_message(MainProcess, {send_me_ets, EtsTabl}, State).
+
+ensure_digraph_replication(State) ->
+  MainProcess = global:whereis_name(singleton_city_graph),
+  class_Actor:send_actor_message(MainProcess, {send_me_digraph, now}, State).
+
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
 onFirstDiasca(State, _SendingActorPid) ->
-	StartTime = getAttribute(State, start_time),
-  CurrentTick = class_Actor:get_current_tick_offset(State),
+  InterscsimulatorEtsState = ensure_ets_replication(interscsimulator, State),
+  EdgesEtsState = ensure_ets_replication(edges_pids, InterscsimulatorEtsState),
+  NodesEtsState = ensure_ets_replication(nodes_pids, EdgesEtsState),
+	StartTime = getAttribute(NodesEtsState, start_time),
+  CurrentTick = class_Actor:get_current_tick_offset(NodesEtsState),
   FirstActionTime = CurrentTick + StartTime,
-	NewState = setAttribute(State, start_time, FirstActionTime),
-  WPid = whereis(result_writer_singleton),
+	NewState = setAttribute(NodesEtsState, start_time, FirstActionTime),
+  WPid = global:whereis_name(result_writer_singleton),
   S2 = setAttribute(NewState, writer_pid, WPid),
-	executeOneway(S2, addSpontaneousTick, FirstActionTime).
+  S3 = ensure_digraph_replication(S2),
+	executeOneway(S3, addSpontaneousTick, FirstActionTime).
 
 update_path(State, error, _Who) ->
   setAttribute(State, status, path_not_resolved);
@@ -218,3 +238,27 @@ receive_append_result(State, success, _WhoPid) ->
   TripId = getAttribute(State, car_name),
   print_success("Finishing trip for car ~p.", [TripId]),
   executeOneway(State, declareTermination).
+
+update_your_ets(State, {EtsTabl, EtsTablContent}, _WhoPid) ->
+  print_info("Replicating ETS Table ~p on node ~p.", [EtsTabl, node()]),
+  ets:new(EtsTabl, [public, set, named_table]),
+  [ets:insert(EtsTabl, {K, V}) || {K, V} <- EtsTablContent],
+  ?wooper_return_state_only(State).
+
+deserialize_digraph({VL, EL, NL, B}) ->
+  DG = case B of
+         true -> digraph:new();
+         false -> digraph:new([acyclic])
+       end,
+  {digraph, V, E, N, B} = DG,
+  ets:delete_all_objects(V),
+  ets:delete_all_objects(E),
+  ets:delete_all_objects(N),
+  ets:insert(V, VL),
+  ets:insert(E, EL),
+  ets:insert(N, NL),
+  {digraph, V, E, N, B}.
+
+update_your_digraph(State, {DigraphPayload}, _WhoPid) ->
+  deserialize_digraph(DigraphPayload),
+  ?wooper_return_state_only(State).
