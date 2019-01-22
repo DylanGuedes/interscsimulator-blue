@@ -14,7 +14,11 @@ run() ->
   },
 
 	DeploymentSettings = #deployment_settings{
-    additional_elements_to_deploy = [ { ".", code } ],
+    additional_elements_to_deploy = [ { ".", code }, {"../deps/brod/_build/default/lib/brod/ebin", data},
+                                      {"../deps/brod/_build/default/lib/crc32cer/ebin", data},
+                                      {"../deps/brod/_build/default/lib/kafka_protocol/ebin", data},
+                                      {"../deps/brod/_build/default/lib/snappyer/ebin", data},
+                                      {"../deps/brod/_build/default/lib/supervisor3/ebin", data} ],
     enable_performance_tracker = false
   },
 
