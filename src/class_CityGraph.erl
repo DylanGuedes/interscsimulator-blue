@@ -1,7 +1,7 @@
 -module(class_CityGraph).
 
 -import('interscsimulator_utils', [print_error/2, print_info/2,
-                                   print_success/2, print_info/1]).
+                                   print_success/2]).
 
 -define(wooper_superclasses, [class_Actor]).
 -define(wooper_construct_parameters, ActorSettings, VerticesPath, EdgesPath).
@@ -20,22 +20,30 @@
 create_ets_table(TableName, TableArgs) ->
   case ets:new(TableName, TableArgs) of
     TableName ->
-      print_success("Sucessfully created ETS table ~p in actor ~p.", [TableName, "CityGraph"]);
+      print_success("Sucessfully created ETS table ~p in actor ~p located in node ~p.", [TableName, "CityGraph", node()]);
     _ ->
-      print_error("Couldn't create ETS table ~p in actor ~p.", [TableName, "CityGraph"])
+      print_error("Couldn't create ETS table ~p in actor ~p located in node ~p.", [TableName, "CityGraph", node()])
   end.
 
 -spec construct(wooper:state(), class_Actor:actor_settings(),
                 string(), string()) -> wooper:state().
 construct(State, ?wooper_construct_parameters) ->
-	ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
-	UpdatedState = setAttribute(ActorState, status, not_ready),
-
-  case ets:info(interscsimulator) of
-    undefined ->
-      create_ets_table(interscsimulator, [public, set, named_table])
+  case filelib:is_regular(VerticesPath) of
+    true ->
+      ok;
+    false ->
+      throw({"File does not exist.", VerticesPath})
+  end,
+  case filelib:is_regular(EdgesPath) of
+    true ->
+      ok;
+    false ->
+      throw({"File does not exist.", EdgesPath})
   end,
 
+  ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
+  UpdatedState = setAttribute(ActorState, status, not_ready),
+  create_ets_table(interscsimulator, [public, set, named_table]),
   create_ets_table(nodes_pids, [public, set, named_table]),
   create_ets_table(edges_pids, [public, set, named_table]),
   create_ets_table(forbidden_edges, [public, set, named_table]),
@@ -44,11 +52,9 @@ construct(State, ?wooper_construct_parameters) ->
   Links = extract_links_from_xml(EdgesPath),
   populate_graph_nodes(Nodes, G),
   populate_graph_links(Links, G),
-  ets:insert(interscsimulator, {graph_pid, G}),
-  print_info("Inserting in table `interscsimulator` value `graph_pid`."),
   global:register_name(singleton_city_graph, self()),
-  print_info("Inserting in table `interscsimulator` value `city_graph_pid`."),
-	setAttribute(UpdatedState, status, ready).
+  ets:insert(interscsimulator, {graph_pid, G}),
+  setAttribute(UpdatedState, status, ready).
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->

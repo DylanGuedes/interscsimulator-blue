@@ -8,13 +8,14 @@ run() ->
 
 	SimulationSettings = #simulation_settings{
     simulation_name = "Sim-Diasca Smart City Integration Test",
-    initialisation_files = ["../assets/simulation_input/trips.init"],
+    initialisation_files = ["../assets/simulation_input/trips_docker.init"],
     interactivity_mode = interactive,
     tick_duration = 1.0
   },
 
 	DeploymentSettings = #deployment_settings{
-    additional_elements_to_deploy = [ { ".", code }, {"../deps/brod/_build/default/lib/brod/ebin", data},
+    additional_elements_to_deploy = [ {".", code },
+                                      {"../deps/brod/_build/default/lib/brod/ebin", data},
                                       {"../deps/brod/_build/default/lib/crc32cer/ebin", data},
                                       {"../deps/brod/_build/default/lib/kafka_protocol/ebin", data},
                                       {"../deps/brod/_build/default/lib/snappyer/ebin", data},

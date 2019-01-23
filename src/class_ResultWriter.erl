@@ -19,15 +19,35 @@
 -include("wooper.hrl").
 
 setup_kafka() ->
-  KafkaProtocolPath = "../deps/brod/_build/default/lib/kafka_protocol/ebin",
-  SnappyerPath = "../deps/brod/_build/default/lib/snappyer/ebin",
-  CrcPath = "../deps/brod/_build/default/lib/crc32cer/ebin",
-  Supervisor3Path = "../deps/brod/_build/default/lib/supervisor3/ebin",
-	BrodPath = "../deps/brod/_build/default/lib/brod/ebin",
+  case os:getenv("KAFKA_BUILD_PATH") of
+    undefined ->
+      throw("Please, set environment variable `KAFKA_BUILD_PATH` with the _build path of your brod package!");
+    _ ->
+      ok
+  end,
+  case os:getenv("KAFKA_HOST") of
+    undefined ->
+      throw("Please, set environment variable `KAFKA_HOST` with the ip of your kafka host!");
+    _ ->
+      ok
+  end,
+  case os:getenv("KAFKA_PORT") of
+    undefined ->
+      throw("Please, set environment variable `KAFKA_PORT` with the number of your kafka port!");
+    _ ->
+      ok
+  end,
+  {KafkaPort, _} = string:to_integer(os:getenv("KAFKA_PORT")),
+  BuildPath = os:getenv("KAFKA_BUILD_PATH"),
+  KafkaProtocolPath = BuildPath ++ "/default/lib/kafka_protocol/ebin",
+  SnappyerPath = BuildPath ++ "/default/lib/snappyer/ebin",
+  CrcPath = BuildPath ++ "/default/lib/crc32cer/ebin",
+  Supervisor3Path = BuildPath ++ "/default/lib/supervisor3/ebin",
+  BrodPath = BuildPath ++ "/default/lib/brod/ebin",
   Paths = [BrodPath, KafkaProtocolPath, SnappyerPath, CrcPath, Supervisor3Path],
   code:add_pathsa(Paths),
   {ok, _} = application:ensure_all_started(brod),
-  KafkaBootstrapEndpoints = [{"172.24.0.71", 9092}],
+  KafkaBootstrapEndpoints = [{os:getenv("KAFKA_HOST"), KafkaPort}],
   ok = brod:start_client(KafkaBootstrapEndpoints, interscity_connection),
   brod:start_producer(interscity_connection, <<"simulation-events">>, []).
 

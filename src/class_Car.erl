@@ -1,7 +1,7 @@
 -module(class_Car).
 
 -import('interscsimulator_utils', [print_error/2, print_info/2,
-                                   print_success/2]).
+                                   print_success/2, print_info/1]).
 
 -define(wooper_superclasses, [class_Actor]).
 -define(wooper_construct_parameters, ActorSettings, CarMap).
@@ -269,13 +269,13 @@ update_your_digraph(State, {DigraphPayload}, _WhoPid) ->
   case ets:info(interscsimulator) of
     undefined ->
       ets:new(interscsimulator, [public, set, named_table]),
-      print_error("Digraph undefined at node ~p...", [node()]),
       deserialize_digraph(DigraphPayload);
     _ ->
       case ets:lookup(interscsimulator, graph_pid) of
         [{graph_pid, _G}] ->
           ok;
         [] ->
+          print_info("Replicating graph..."),
           deserialize_digraph(DigraphPayload)
       end
   end,
