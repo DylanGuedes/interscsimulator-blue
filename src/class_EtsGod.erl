@@ -107,5 +107,5 @@ deserialize_digraph({VL, EL, NL, B}) ->
   {digraph, V, E, N, B}.
 
 update_your_digraph(State, {DigraphPayload}, _WhoPid) ->
-  deserialize_digraph(DigraphPayload),
+  deserialize_digraph(binary_to_term(zlib:gunzip(DigraphPayload))),
   ?wooper_return_state_only(State).

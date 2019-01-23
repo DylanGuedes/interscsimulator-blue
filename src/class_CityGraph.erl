@@ -171,5 +171,5 @@ serialize_digraph({digraph, V, E, N, B}) ->
 
 send_me_digraph(State, _, WhoPid) ->
   [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
-  Payload = serialize_digraph(G),
+  Payload = zlib:gzip(term_to_binary(serialize_digraph(G))),
   class_Actor:send_actor_message(WhoPid, {update_your_digraph, {Payload}}, State).
