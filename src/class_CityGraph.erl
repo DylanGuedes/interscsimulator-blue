@@ -1,7 +1,6 @@
 -module(class_CityGraph).
 
--import('interscsimulator_utils', [print_error/2, print_info/2,
-                                   print_success/2]).
+-import('interscsimulator_utils', [print_error/2, print_info/2]).
 
 -define(wooper_superclasses, [class_Actor]).
 -define(wooper_construct_parameters, ActorSettings, VerticesPath, EdgesPath).
@@ -16,14 +15,6 @@
 
 -include("smart_city_test_types.hrl").
 -include("wooper.hrl").
-
-create_ets_table(TableName, TableArgs) ->
-  case ets:new(TableName, TableArgs) of
-    TableName ->
-      print_success("Sucessfully created ETS table ~p in actor ~p located in node ~p.", [TableName, "CityGraph", node()]);
-    _ ->
-      print_error("Couldn't create ETS table ~p in actor ~p located in node ~p.", [TableName, "CityGraph", node()])
-  end.
 
 -spec construct(wooper:state(), class_Actor:actor_settings(),
                 string(), string()) -> wooper:state().
@@ -40,21 +31,14 @@ construct(State, ?wooper_construct_parameters) ->
     false ->
       throw({"File does not exist.", EdgesPath})
   end,
-
-  ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
-  UpdatedState = setAttribute(ActorState, status, not_ready),
-  create_ets_table(interscsimulator, [public, set, named_table]),
-  create_ets_table(nodes_pids, [public, set, named_table]),
-  create_ets_table(edges_pids, [public, set, named_table]),
-  create_ets_table(forbidden_edges, [public, set, named_table]),
-  G = digraph:new(),
-  Nodes = extract_nodes_from_xml(VerticesPath),
-  Links = extract_links_from_xml(EdgesPath),
-  populate_graph_nodes(Nodes, G),
-  populate_graph_links(Links, G),
   global:register_name(singleton_city_graph, self()),
-  ets:insert(interscsimulator, {graph_pid, G}),
-  setAttribute(UpdatedState, status, ready).
+  ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
+	setAttributes(ActorState, [
+    { status, not_ready },
+    { edges_path, EdgesPath },
+    { vertices_path , VerticesPath }
+  ]).
+
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->
@@ -134,7 +118,15 @@ mount_link(A) ->
 
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
 onFirstDiasca(State, _SendingActorPid) ->
-	?wooper_return_state_only(State).
+  G = digraph:new(),
+  VerticesPath = getAttribute(State, vertices_path),
+  Nodes = extract_nodes_from_xml(VerticesPath),
+  EdgesPath = getAttribute(State, edges_path),
+  Links = extract_links_from_xml(EdgesPath),
+  populate_graph_nodes(Nodes, G),
+  populate_graph_links(Links, G),
+  ets:insert(interscsimulator, {graph_pid, G}),
+  setAttribute(State, status, ready).
 
 calculate_bfs(State, {Origin, Destination}, WhoPid) ->
   [{Origin, U}] = ets:lookup(nodes_pids, Origin),
@@ -164,7 +156,6 @@ update_capacity(State, {V1Idx, V2Idx, Factor}, _WhoPid) ->
   {E, V1_vtx, V2_vtx, Label} = digraph:edge(G, E),
   {X1, X2, X3, Capacity, X5, X6, X7} = Label,
   NewLabel = {X1, X2, X3, Capacity + Factor, X5, X6, X7},
-  print_info("Updating capacity to ~p+(~p) for edge (~p)->(~p)", [Capacity, Factor, V1Idx, V2Idx]),
   digraph:add_edge(G, E, V1_vtx, V2_vtx, NewLabel),
 	?wooper_return_state_only(State).
 

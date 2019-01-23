@@ -1,6 +1,6 @@
 -module(class_Car).
 
--import('interscsimulator_utils', [print_error/2, print_info/2,
+-import('interscsimulator_utils', [print_error/2,
                                    print_success/2, print_info/1]).
 
 -define(wooper_superclasses, [class_Actor]).
@@ -149,7 +149,6 @@ handle_trip_walk(State, CurrentNode_vtx, NextNode_vtx, RemainingNodes) ->
   [{{CurrentNodeIdx, NextNodeIdx}, E_edg}] = ets:lookup(edges_pids, {CurrentNodeIdx, NextNodeIdx}),
   {E_edg, CurrentNode_vtx, NextNode_vtx, E_Label} = digraph:edge(G, E_edg),
   Capacity = element(4, E_Label),
-  print_error("Edge ~p has capacity ~p", [E_edg, Capacity]),
   case Capacity of
     0 ->
       do_not_walk(State);
@@ -181,7 +180,6 @@ update_capacity(State, V1Idx, V2Idx, Factor) when is_list(V1Idx), is_list(V2Idx)
 % Just wait til next tick
 do_not_walk(State) ->
   T = class_Actor:get_current_tick_offset(State),
-  print_info("Waiting in tick ~p", [T]),
   executeOneway(State, addSpontaneousTick, T+1).
 
 float_to_string(Float) ->

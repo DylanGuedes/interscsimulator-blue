@@ -20,19 +20,19 @@
 
 setup_kafka() ->
   case os:getenv("KAFKA_BUILD_PATH") of
-    undefined ->
+    false ->
       throw("Please, set environment variable `KAFKA_BUILD_PATH` with the _build path of your brod package!");
     _ ->
       ok
   end,
   case os:getenv("KAFKA_HOST") of
-    undefined ->
+    false ->
       throw("Please, set environment variable `KAFKA_HOST` with the ip of your kafka host!");
     _ ->
       ok
   end,
   case os:getenv("KAFKA_PORT") of
-    undefined ->
+    false ->
       throw("Please, set environment variable `KAFKA_PORT` with the number of your kafka port!");
     _ ->
       ok
