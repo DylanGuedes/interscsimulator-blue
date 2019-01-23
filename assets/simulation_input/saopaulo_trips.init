@@ -1,0 +1,4 @@
+{ class_EtsGod, [], node1 }.
+{ class_EtsGod, [], node2 }.
+{ class_ResultWriter, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_output/output.csv"], node1 }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], node2 }.
