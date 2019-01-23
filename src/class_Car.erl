@@ -1,7 +1,7 @@
 -module(class_Car).
 
 -import('interscsimulator_utils', [print_error/2,
-                                   print_success/2, print_info/1]).
+                                   print_success/2]).
 
 -define(wooper_superclasses, [class_Actor]).
 -define(wooper_construct_parameters, ActorSettings, CarMap).
@@ -12,7 +12,7 @@
 		 remote_new/3, remote_new_link/3, remote_synchronous_new/3,
 		 remote_synchronous_new_link/3, remote_synchronisable_new_link/3,
 		 remote_synchronous_timed_new/3, remote_synchronous_timed_new_link/3,
-		 construct/3, destruct/1, update_your_ets/3, update_your_digraph/3).
+		 construct/3, destruct/1).
 
 -define(wooper_method_export, actSpontaneous/1, onFirstDiasca/2,
         update_path/3, receive_append_result/3).
@@ -194,35 +194,22 @@ walk(State, {EId, ELength, EFreeSpeed, ECapacity, _, _, _}=_Label) when is_float
   UpdatedState2 = class_Actor:send_actor_message(WPid, {publish_event, {list_to_binary(Payload), <<"edge_update">>}}, UpdatedState),
   executeOneway(UpdatedState2, addSpontaneousTick, T+ElapsedTime).
 
-ensure_ets_replication(TablName, State) ->
-  case ets:info(TablName) of
-    undefined ->
-      ask_for_ets_replication(TablName, State);
-    _ ->
-      State
-  end.
-
-ask_for_ets_replication(EtsTabl, State) ->
-  MainProcess = global:whereis_name(singleton_city_graph),
-  class_Actor:send_actor_message(MainProcess, {send_me_ets, EtsTabl}, State).
-
-ensure_digraph_replication(State) ->
-  MainProcess = global:whereis_name(singleton_city_graph),
-  class_Actor:send_actor_message(MainProcess, {send_me_digraph, now}, State).
+check_replication(TablName, State) ->
+  EtsGodPid = whereis(ets_holder),
+  class_Actor:send_actor_message(EtsGodPid, {ensure_replica_is_healthy, TablName}, State).
 
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
 onFirstDiasca(State, _SendingActorPid) ->
-  InterscsimulatorEtsState = ensure_ets_replication(interscsimulator, State),
-  EdgesEtsState = ensure_ets_replication(edges_pids, InterscsimulatorEtsState),
-  NodesEtsState = ensure_ets_replication(nodes_pids, EdgesEtsState),
+  InterscsimulatorEtsState = check_replication(interscsimulator, State),
+  EdgesEtsState = check_replication(edges_pids, InterscsimulatorEtsState),
+  NodesEtsState = check_replication(nodes_pids, EdgesEtsState),
 	StartTime = getAttribute(NodesEtsState, start_time),
   CurrentTick = class_Actor:get_current_tick_offset(NodesEtsState),
   FirstActionTime = CurrentTick + StartTime,
 	NewState = setAttribute(NodesEtsState, start_time, FirstActionTime),
   WPid = global:whereis_name(result_writer_singleton),
   S2 = setAttribute(NewState, writer_pid, WPid),
-  S3 = ensure_digraph_replication(S2),
-	executeOneway(S3, addSpontaneousTick, FirstActionTime).
+	executeOneway(S2, addSpontaneousTick, FirstActionTime).
 
 update_path(State, error, _Who) ->
   setAttribute(State, status, path_not_resolved);
@@ -236,45 +223,3 @@ receive_append_result(State, success, _WhoPid) ->
   TripId = getAttribute(State, car_name),
   print_success("Finishing trip for car ~p.", [TripId]),
   executeOneway(State, declareTermination).
-
-update_your_ets(State, {EtsTabl, EtsTablContent}, _WhoPid) ->
-  case ets:info(EtsTabl) of
-    undefined ->
-      ets:new(EtsTabl, [public, set, named_table]),
-      [ets:insert(EtsTabl, {K, V}) || {K, V} <- EtsTablContent, K =/= graph_pid];
-    _ ->
-      [ets:insert(EtsTabl, {K, V}) || {K, V} <- EtsTablContent, K =/= graph_pid],
-      ok
-  end,
-  ?wooper_return_state_only(State).
-
-deserialize_digraph({VL, EL, NL, B}) ->
-  DG = case B of
-         true -> digraph:new();
-         false -> digraph:new([acyclic])
-       end,
-  {digraph, V, E, N, B} = DG,
-  ets:delete_all_objects(V),
-  ets:delete_all_objects(E),
-  ets:delete_all_objects(N),
-  ets:insert(V, VL),
-  ets:insert(E, EL),
-  ets:insert(N, NL),
-  ets:insert(interscsimulator, {graph_pid, DG}),
-  {digraph, V, E, N, B}.
-
-update_your_digraph(State, {DigraphPayload}, _WhoPid) ->
-  case ets:info(interscsimulator) of
-    undefined ->
-      ets:new(interscsimulator, [public, set, named_table]),
-      deserialize_digraph(DigraphPayload);
-    _ ->
-      case ets:lookup(interscsimulator, graph_pid) of
-        [{graph_pid, _G}] ->
-          ok;
-        [] ->
-          print_info("Replicating graph..."),
-          deserialize_digraph(DigraphPayload)
-      end
-  end,
-  ?wooper_return_state_only(State).
