@@ -33,10 +33,14 @@ construct(State, ?wooper_construct_parameters) ->
   end,
   global:register_name(singleton_city_graph, self()),
   ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
+  G = digraph:new(),
+  Nodes = extract_nodes_from_xml(VerticesPath),
+  Links = extract_links_from_xml(EdgesPath),
+  populate_graph_nodes(Nodes, G),
+  populate_graph_links(Links, G),
 	setAttributes(ActorState, [
     { status, not_ready },
-    { edges_path, EdgesPath },
-    { vertices_path , VerticesPath }
+    { erl_graph_pid , G }
   ]).
 
 
@@ -118,14 +122,9 @@ mount_link(A) ->
 
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
 onFirstDiasca(State, _SendingActorPid) ->
-  G = digraph:new(),
-  VerticesPath = getAttribute(State, vertices_path),
-  Nodes = extract_nodes_from_xml(VerticesPath),
-  EdgesPath = getAttribute(State, edges_path),
-  Links = extract_links_from_xml(EdgesPath),
-  populate_graph_nodes(Nodes, G),
-  populate_graph_links(Links, G),
+  G = getAttribute(State, erl_graph_pid),
   ets:insert(interscsimulator, {graph_pid, G}),
+  print_info("Inserting `graph_pid` on table `interscsimulator` on node ~p.", [node()]),
   setAttribute(State, status, ready).
 
 calculate_bfs(State, {Origin, Destination}, WhoPid) ->
@@ -170,6 +169,7 @@ serialize_digraph({digraph, V, E, N, B}) ->
      ets:tab2list(N), B}.
 
 send_me_digraph(State, _, WhoPid) ->
-  [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
+  print_info("Lookup on graph_pid on node ~p.", [node()]),
+  G = getAttribute(State, erl_graph_pid),
   Payload = zlib:gzip(term_to_binary(serialize_digraph(G))),
   class_Actor:send_actor_message(WhoPid, {update_your_digraph, {Payload}}, State).

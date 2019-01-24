@@ -1,7 +1,7 @@
 -module(class_EtsGod).
 
 -import('interscsimulator_utils', [print_error/2,
-                                   print_success/2]).
+                                   print_success/2, print_info/2]).
 
 -define(wooper_superclasses, [class_Actor]).
 -define(wooper_construct_parameters, ActorSettings).
@@ -44,7 +44,12 @@ construct(State, ?wooper_construct_parameters) ->
     false ->
       ok
   end,
-  setAttribute(ActorState, status, ready).
+	setAttributes(ActorState, [
+    { status, ready },
+    { interscsimulator , false },
+    { edges_pids , false },
+    { nodes_pids, false}
+  ]).
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->
@@ -57,7 +62,12 @@ onFirstDiasca(State, _SendingActorPid) ->
 ensure_replica_is_healthy(State, EtsTabl, _WhoPid) ->
   case empty_ets(EtsTabl) of
     true ->
-      ask_for_ets_replication(EtsTabl, State);
+      case getAttribute(State, EtsTabl) of
+        true ->
+          ?wooper_return_state_only(State);
+        _ ->
+          setAttribute(ask_for_ets_replication(EtsTabl, State), EtsTabl, true)
+      end;
     false -> ?wooper_return_state_only(State)
   end.
 
@@ -79,6 +89,7 @@ update_your_ets(State, {EtsTabl, EtsTablContent}, _WhoPid) ->
       [ets:insert(EtsTabl, {K, V}) || {K, V} <- EtsTablContent],
       case EtsTabl of
         interscsimulator ->
+          print_info("Content: ~p", [EtsTablContent]),
           ask_for_digraph_replication(State);
         _ ->
           ?wooper_return_state_only(State)
