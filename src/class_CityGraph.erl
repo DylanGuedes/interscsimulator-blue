@@ -31,18 +31,23 @@ construct(State, ?wooper_construct_parameters) ->
     false ->
       throw({"File does not exist.", EdgesPath})
   end,
-  global:register_name(singleton_city_graph, self()),
   ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
-  G = digraph:new(),
-  Nodes = extract_nodes_from_xml(VerticesPath),
-  Links = extract_links_from_xml(EdgesPath),
-  populate_graph_nodes(Nodes, G),
-  populate_graph_links(Links, G),
-	setAttributes(ActorState, [
-    { status, not_ready },
-    { erl_graph_pid , G }
-  ]).
-
+  case whereis(singleton_city_graph) of
+    undefined ->
+      register(singleton_city_graph, self()),
+      G = digraph:new(),
+      Nodes = extract_nodes_from_xml(VerticesPath),
+      Links = extract_links_from_xml(EdgesPath),
+      populate_graph_nodes(Nodes, G),
+      populate_graph_links(Links, G),
+      setAttributes(ActorState, [
+        { status, not_ready },
+        { erl_graph_pid , G },
+        { stay_alive, true }
+      ]);
+    _ ->
+      setAttribute(ActorState, stay_alive, false)
+  end.
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->
@@ -122,10 +127,15 @@ mount_link(A) ->
 
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
 onFirstDiasca(State, _SendingActorPid) ->
-  G = getAttribute(State, erl_graph_pid),
-  ets:insert(interscsimulator, {graph_pid, G}),
-  print_info("Inserting `graph_pid` on table `interscsimulator` on node ~p.", [node()]),
-  setAttribute(State, status, ready).
+  case getAttribute(State, stay_alive) of
+    true ->
+      G = getAttribute(State, erl_graph_pid),
+      ets:insert(interscsimulator, {graph_pid, G}),
+      print_info("Inserting `graph_pid` on table `interscsimulator` on node ~p.", [node()]),
+      setAttribute(State, status, ready);
+    false ->
+      executeOneway(State, declareTermination)
+  end.
 
 calculate_bfs(State, {Origin, Destination}, WhoPid) ->
   [{Origin, U}] = ets:lookup(nodes_pids, Origin),

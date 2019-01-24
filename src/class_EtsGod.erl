@@ -72,7 +72,7 @@ ensure_replica_is_healthy(State, EtsTabl, _WhoPid) ->
   end.
 
 ask_for_ets_replication(EtsTabl, State) ->
-  MainProcess = global:whereis_name(singleton_city_graph),
+  MainProcess = whereis(singleton_city_graph),
   class_Actor:send_actor_message(MainProcess, {send_me_ets, EtsTabl}, State).
 
 empty_ets(EtsTabl) ->
@@ -99,7 +99,7 @@ update_your_ets(State, {EtsTabl, EtsTablContent}, _WhoPid) ->
   end.
 
 ask_for_digraph_replication(State) ->
-  MainProcess = global:whereis_name(singleton_city_graph),
+  MainProcess = whereis(singleton_city_graph),
   class_Actor:send_actor_message(MainProcess, {send_me_digraph, now}, State).
 
 deserialize_digraph({VL, EL, NL, B}) ->

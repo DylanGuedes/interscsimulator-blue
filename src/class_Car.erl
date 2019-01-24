@@ -95,7 +95,7 @@ finish_trip(State) ->
 resolve_path(State) ->
   V1Idx = getAttribute(State, origin_idx),
   V2Idx = getAttribute(State, destination_idx),
-  GPid = global:whereis_name(singleton_city_graph),
+  GPid = whereis(singleton_city_graph),
   class_Actor:send_actor_message(GPid, {calculate_bfs, {V1Idx, V2Idx}}, State).
 
 forbidden_edge(_V1_vtx, _V2_vtx) ->
@@ -174,7 +174,7 @@ handle_trip_walk(State, CurrentNode_vtx, NextNode_vtx, RemainingNodes) ->
 
 % Updates capacity of edge label by factor. i.e: you can decrease or increase
 update_capacity(State, V1Idx, V2Idx, Factor) when is_list(V1Idx), is_list(V2Idx), is_integer(Factor) ->
-  GraphManagerPid = global:whereis_name(singleton_city_graph),
+  GraphManagerPid = whereis(singleton_city_graph),
   class_Actor:send_actor_message(GraphManagerPid, {update_capacity, {V1Idx, V2Idx, Factor}}, State).
 
 % Just wait til next tick
