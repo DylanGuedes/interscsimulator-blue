@@ -28,6 +28,7 @@ construct(State, ?wooper_construct_parameters) ->
   {ok, V1} = maps:find(origin, CarMap),
   {ok, V2} = maps:find(destination, CarMap),
   {ok, Tick1} = maps:find(start_time, CarMap),
+  {ok, Uuid} = maps:find(uuid, CarMap),
 
 	ActorState = class_Actor:construct(State, ActorSettings, Id),
 
@@ -43,7 +44,8 @@ construct(State, ?wooper_construct_parameters) ->
 		{ path, 2 },
     { origin_idx, V1 },
     { destination_idx, V2 },
-    { current_edge_length, 0 }
+    { current_edge_length, 0 },
+    { uuid, Uuid }
   ]).
 
 -spec destruct(wooper:state()) -> wooper:state().
@@ -192,7 +194,15 @@ walk(State, {EId, ELength, EFreeSpeed, ECapacity, _, _, _}=_Label) when is_float
   WPid = global:whereis_name(result_writer_singleton),
 	Payload = lists:flatten(io_lib:format("~s;~s;~s;~s;~p", [EId, float_to_string(ELength), float_to_string(EFreeSpeed), float_to_string(ECapacity), T])),
   UpdatedState2 = class_Actor:send_actor_message(WPid, {publish_event, {list_to_binary(Payload), <<"edge_update">>}}, UpdatedState),
-  executeOneway(UpdatedState2, addSpontaneousTick, T+ElapsedTime).
+  UpdatedState3 = send_to_data_processor(UpdatedState2),
+  executeOneway(UpdatedState3, addSpontaneousTick, T+ElapsedTime).
+
+send_to_data_processor(State) ->
+  Uuid = getAttribute(State, uuid),
+  NodeId = getAttribute(State, last_node_idx),
+  T = class_Actor:get_current_tick_offset(State),
+  WPid = global:whereis_name(result_writer_singleton),
+  class_Actor:send_actor_message(WPid, {write_to_data_collector, {Uuid, NodeId, T}}, State).
 
 check_replication(TablName, State) ->
   EtsGodPid = whereis(ets_holder),

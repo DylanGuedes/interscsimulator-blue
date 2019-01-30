@@ -12,9 +12,11 @@
 		 remote_synchronous_timed_new/3, remote_synchronous_timed_new_link/3,
 		 construct/3, destruct/1).
 
--define(wooper_method_export, onFirstDiasca/2, append_to_output/3, actSpontaneous/1, publish_event/3).
+-define(wooper_method_export, onFirstDiasca/2, append_to_output/3, actSpontaneous/1, publish_event/3, write_to_data_collector/3).
 
 -include("smart_city_test_types.hrl").
+
+-include_lib("../deps/amqp_client/include/amqp_client.hrl").
 
 -include("wooper.hrl").
 
@@ -57,8 +59,20 @@ construct(State, ?wooper_construct_parameters) ->
   setup_kafka(),
   global:register_name(result_writer_singleton, self()),
 	ActorState = class_Actor:construct(State, ActorSettings, "Trips Result Writer"),
+  {ok, RabbitmqChannel} = setup_rabbitmq(),
 	setAttributes(ActorState, [
-    {status, not_ready}, {final_path, FinalPath}, {file_ptr, -1}]).
+    {status, not_ready}, {final_path, FinalPath}, {file_ptr, -1}, {rabbitmq_channel, RabbitmqChannel}]).
+
+setup_rabbitmq() ->
+	AmqpClientPath = os:getenv("AMQP_CLIENT_PATH"),
+	Paths = [
+    AmqpClientPath,
+    AmqpClientPath ++ "/ebin",
+    AmqpClientPath ++ "/include/rabbit_common/ebin"],
+  code:add_pathsa(Paths),
+  Hostname = os:getenv("RABBITMQ_HOST"),
+	{ok, Connection} = amqp_connection:start(#amqp_params_network{host=Hostname}),
+	amqp_connection:open_channel(Connection).
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->
@@ -89,10 +103,26 @@ append_to_output(State, Payload, WhoPid) ->
   class_Actor:send_actor_message(WhoPid, {receive_append_result, success}, State).
 
 publish_event(State, {Payload, EventType}, _WhoPid) ->
+  write_to_kafka(EventType, Payload, State).
+
+write_to_data_collector(State, {Payload, EventType}, _WhoPid) ->
+  write_to_rabbitmq(EventType, Payload, State).
+
+write_to_kafka(EventType, Payload, State) ->
   Client = interscity_connection,
   Topic  = <<"simulation-events">>,
   brod:produce_sync(Client, Topic, 0, EventType, Payload),
   ?wooper_return_state_only(State).
+
+write_to_rabbitmq(_EventType, Payload, State) ->
+  {Uuid, NodeId, Tick} = Payload,
+  Message = lists:flatten( io_lib:format( "{ \"uuid\": ~p, \"nodeID\": ~p, \"tick\": ~p }", [ Uuid, NodeId, Tick ] ) ),
+	RoutingKey = list_to_binary(Uuid ++ ".current_location.simulated"),
+  Channel = getAttribute(State, rabbitmq_channel),
+	Exchange = #'exchange.declare'{exchange = <<"data_stream">>, type = <<"topic">>},
+	#'exchange.declare_ok'{} = amqp_channel:call(Channel, Exchange),
+	Publish = #'basic.publish'{exchange = <<"data_stream">>, routing_key = RoutingKey},
+	amqp_channel:cast(Channel, Publish, #amqp_msg{payload = <<Message>>}).
 
 -spec actSpontaneous(wooper:state()) -> oneway_return().
 actSpontaneous(State) ->
