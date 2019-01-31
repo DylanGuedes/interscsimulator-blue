@@ -8,7 +8,7 @@ run() ->
 
 	SimulationSettings = #simulation_settings{
     simulation_name = "Sim-Diasca Smart City Integration Test",
-    initialisation_files = ["../assets/simulation_input/trips_docker.init"],
+    initialisation_files = ["../assets/simulation_input/saopaulo_trips.init"],
     interactivity_mode = interactive,
     tick_duration = 1.0
   },
@@ -19,7 +19,10 @@ run() ->
                                       {"../deps/brod/_build/default/lib/crc32cer/ebin", data},
                                       {"../deps/brod/_build/default/lib/kafka_protocol/ebin", data},
                                       {"../deps/brod/_build/default/lib/snappyer/ebin", data},
-                                      {"../deps/brod/_build/default/lib/supervisor3/ebin", data} ],
+                                      {"../deps/brod/_build/default/lib/supervisor3/ebin", data},
+                                      {"/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", data},
+                                      {"/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml", data}
+                                      ],
     enable_performance_tracker = false
   },
 
@@ -27,7 +30,7 @@ run() ->
 
   DeploymentManagerPid = sim_diasca:init(SimulationSettings, DeploymentSettings, LoadBalancingSettings),
 
-	SimulationDuration = 100, % how many ticks? (in seconds)
+	SimulationDuration = 86400, % how many ticks? (in seconds)
 
 	DeploymentManagerPid ! { getRootTimeManager, [], self() },
 	RootTimeManagerPid = test_receive(),
