@@ -1,4 +1,27 @@
-{ class_EtsGod, [], node1 }.
-{ class_EtsGod, [], node2 }.
-{ class_ResultWriter, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_output/output.csv"], node1 }.
-{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], node2 }.
+{ class_EtsGod, [], a }.
+{ class_EtsGod, [], b }.
+{ class_EtsGod, [], c }.
+{ class_EtsGod, [], d }.
+{ class_EtsGod, [], e }.
+{ class_EtsGod, [], f }.
+{ class_EtsGod, [], g }.
+{ class_EtsGod, [], h }.
+{ class_EtsGod, [], j }.
+{ class_EtsGod, [], j }.
+{ class_EtsGod, [], k }.
+{ class_EtsGod, [], l }.
+
+{ class_ResultWriter, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_output/output.csv"], a }.
+
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], a }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], b }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], c }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], d }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], e }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], f }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], g }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], h }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], i }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], j }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], k }.
+{ class_CityGraph, ["/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", "/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml"], l }.
