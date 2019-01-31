@@ -2,6 +2,10 @@ import xml.etree.ElementTree as ET
 import sys
 import uuid
 from interscity_client import platform
+from multiprocessing import Process
+
+def register_car(generated_uuid):
+    car_builder.register(generated_uuid, "Car "+generated_uuid, ["city_traffic"])
 
 if __name__ == '__main__':
     XML_PATH = "./sao_paulo/trips_completo.xml"
@@ -21,7 +25,8 @@ if __name__ == '__main__':
         count_to_use = int(int(attrs["count"])/8)
         for v in range(0, count_to_use):
             generated_uuid = str(uuid.uuid4())
-            car_builder.register(generated_uuid, "Car "+generated_uuid, ["city_traffic"])
+            p = Process(target=register_car, args=(generated_uuid))
+            p.start()
             payload = """
             {{ class_Car, [#{{id => "{}", origin => "{}", destination => "{}", start_time => {}, start_link => "{}", uuid => "{}" }}], {} }}.
             """.format(gen_id, attrs["origin"], attrs["destination"], attrs["start"], attrs["link_origin"], generated_uuid, nodes[(v%computing_nodes)])
