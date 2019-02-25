@@ -105,8 +105,9 @@ append_to_output(State, Payload, WhoPid) ->
 publish_event(State, {Payload, EventType}, _WhoPid) ->
   write_to_kafka(EventType, Payload, State).
 
-write_to_data_collector(State, {Payload, EventType}, _WhoPid) ->
-  write_to_rabbitmq(EventType, Payload, State).
+write_to_data_collector(State, Payload, _WhoPid) ->
+  io:format("~nPAYLOAD: => ~p~n", [Payload]),
+  write_to_rabbitmq(Payload, State).
 
 write_to_kafka(EventType, Payload, State) ->
   Client = interscity_connection,
@@ -114,15 +115,15 @@ write_to_kafka(EventType, Payload, State) ->
   brod:produce_sync(Client, Topic, 0, EventType, Payload),
   ?wooper_return_state_only(State).
 
-write_to_rabbitmq(_EventType, Payload, State) ->
-  {Uuid, NodeId, Tick} = Payload,
-  Message = lists:flatten( io_lib:format( "{ \"uuid\": ~p, \"nodeID\": ~p, \"tick\": ~p }", [ Uuid, NodeId, Tick ] ) ),
-	RoutingKey = list_to_binary(Uuid ++ ".current_location.simulated"),
+write_to_rabbitmq({Uuid, NodeId, Tick}, State) ->
+  Message = list_to_binary(lists:flatten( io_lib:format( "{ \"uuid\": ~p, \"nodeID\": ~p, \"tick\": ~p, \"date\": ~p}", [ Uuid, NodeId, Tick, os:cmd("date") ] ) )),
+	RoutingKey = list_to_binary(Uuid ++ ".city_traffic.simulated"),
   Channel = getAttribute(State, rabbitmq_channel),
 	Exchange = #'exchange.declare'{exchange = <<"data_stream">>, type = <<"topic">>},
 	#'exchange.declare_ok'{} = amqp_channel:call(Channel, Exchange),
 	Publish = #'basic.publish'{exchange = <<"data_stream">>, routing_key = RoutingKey},
-	amqp_channel:cast(Channel, Publish, #amqp_msg{payload = <<Message>>}).
+	amqp_channel:cast(Channel, Publish, #amqp_msg{payload = Message}),
+  ?wooper_return_state_only(State).
 
 -spec actSpontaneous(wooper:state()) -> oneway_return().
 actSpontaneous(State) ->
