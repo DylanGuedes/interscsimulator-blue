@@ -106,7 +106,6 @@ publish_event(State, {Payload, EventType}, _WhoPid) ->
   write_to_kafka(EventType, Payload, State).
 
 write_to_data_collector(State, Payload, _WhoPid) ->
-  io:format("~nPAYLOAD: => ~p~n", [Payload]),
   write_to_rabbitmq(Payload, State).
 
 write_to_kafka(EventType, Payload, State) ->

@@ -141,15 +141,24 @@ calculate_bfs(State, {Origin, Destination}, WhoPid) ->
   [{Origin, U}] = ets:lookup(nodes_pids, Origin),
   [{Destination, V}] = ets:lookup(nodes_pids, Destination),
   [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
-  Path = digraph:get_short_path(G, U, V),
-  S1 = case Path of
-    false ->
-      print_error("No path is possible from ~p to ~p~n", [Origin, Destination]),
-      class_Actor:send_actor_message(WhoPid, {update_path, error}, State);
-    _ ->
-      class_Actor:send_actor_message(WhoPid, {update_path, [Path]}, State)
+  Path = ets:lookup(bfs_cache, {Origin, Destination}),
+
+  S2 = case Path of
+    [] ->
+      NewPath = digraph:get_short_path(G, U, V),
+      case NewPath of
+        false ->
+          print_error("No path is possible from ~p to ~p~n", [Origin, Destination]),
+          class_Actor:send_actor_message(WhoPid, {update_path, error}, State);
+        _ ->
+          ets:insert(bfs_cache, {{Origin, Destination}, NewPath}),
+          class_Actor:send_actor_message(WhoPid, {update_path, [NewPath]}, State)
+      end;
+    [{{Origin, Destination}, NewPath}] ->
+      print_info("Using cache from (~p)->(~p)", [Origin, Destination]),
+      class_Actor:send_actor_message(WhoPid, {update_path, [NewPath]}, State)
   end,
-  ?wooper_return_state_only(S1).
+  ?wooper_return_state_only(S2).
 
 is_ready(State, WhoPid) ->
   case getAttribute(State, status) of

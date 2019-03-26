@@ -40,6 +40,7 @@ construct(State, ?wooper_construct_parameters) ->
     true ->
       create_ets_table(interscsimulator, [public, set, named_table]),
       create_ets_table(nodes_pids, [public, set, named_table]),
+      create_ets_table(bfs_cache, [public, set, named_table]),
       create_ets_table(edges_pids, [public, set, named_table]);
     false ->
       ok
