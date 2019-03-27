@@ -1,5 +1,7 @@
 { class_EtsGod, [], a }.
 
+{ class_TickKeeper, [], a}.
+
 { class_ResultWriter, ["/simulation_output/output.csv"], a }.
 
 { class_CityGraph, ["/simulation_input/validation/nodes.xml", "/simulation_input/validation/links.xml"], a }.
@@ -31,4 +33,5 @@
 { class_Car, [#{id => "25", origin => "1", destination => "5", start_time => 6, start_link => "1", uuid => "46b58d14-d7c8-468f-ae75-ff7f037d7401" }], a }.
 { class_Car, [#{id => "26", origin => "1", destination => "6", start_time => 6, start_link => "1", uuid => "330672a6-7619-4f1e-97a2-96eab4661b23" }], a }.
 { class_Car, [#{id => "27", origin => "1", destination => "7", start_time => 6, start_link => "1", uuid => "dfa41aaf-c5a2-4942-83fd-b67e2b386fcb" }], a }.
+{ class_Car, [#{id => "27", origin => "1", destination => "7", start_time => 6, start_link => "1", uuid => "dfa41aaf-c5a2-4942-83fd-b67e2b386fcb" }], b }.
 { class_Car, [#{id => "28", origin => "1", destination => "8", start_time => 6, start_link => "1", uuid => "f00038ce-0258-4022-b690-d0a64ae27fd7" }], a }.

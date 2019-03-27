@@ -33,7 +33,8 @@ construct(State, ?wooper_construct_parameters) ->
       setAttributes(ActorState, [
         { status, not_ready },
         { erl_graph_pid , G },
-        { stay_alive, true }
+        { stay_alive, true },
+        { paths_to_solve, queue:new() }
       ]);
     _ ->
       setAttribute(ActorState, stay_alive, false)
