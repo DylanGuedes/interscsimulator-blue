@@ -219,7 +219,13 @@ onFirstDiasca(State, _SendingActorPid) ->
 	NewState = setAttribute(NodesEtsState, start_time, FirstActionTime),
   WPid = global:whereis_name(result_writer_singleton),
   S2 = setAttribute(NewState, writer_pid, WPid),
-	executeOneway(S2, addSpontaneousTick, FirstActionTime).
+	executeOneway(add_path_to_solve(S2), addSpontaneousTick, FirstActionTime).
+
+add_path_to_solve(State) ->
+  V1Idx = getAttribute(State, origin_idx),
+  V2Idx = getAttribute(State, destination_idx),
+  GPid = whereis(singleton_city_graph),
+  class_Actor:send_actor_message(GPid, {add_to_paths_to_solve, {V1Idx, V2Idx}}, State).
 
 update_path(State, error, _Who) ->
   setAttribute(State, status, path_not_resolved);

@@ -11,7 +11,8 @@
 		 remote_synchronous_new_link/4, remote_synchronisable_new_link/4,
 		 remote_synchronous_timed_new/4, remote_synchronous_timed_new_link/4,
 		 construct/4, destruct/1, send_me_ets/3, send_me_digraph/3).
--define(wooper_method_export, onFirstDiasca/2, calculate_bfs/3, update_capacity/3).
+-define(wooper_method_export, onFirstDiasca/2, calculate_bfs/3, update_capacity/3,
+       add_to_paths_to_solve/3, actSpontaneous/1).
 
 -include("smart_city_test_types.hrl").
 -include("wooper.hrl").
@@ -33,8 +34,7 @@ construct(State, ?wooper_construct_parameters) ->
       setAttributes(ActorState, [
         { status, not_ready },
         { erl_graph_pid , G },
-        { stay_alive, true },
-        { paths_to_solve, queue:new() }
+        { stay_alive, true }
       ]);
     _ ->
       setAttribute(ActorState, stay_alive, false)
@@ -123,7 +123,9 @@ onFirstDiasca(State, _SendingActorPid) ->
       G = getAttribute(State, erl_graph_pid),
       ets:insert(interscsimulator, {graph_pid, G}),
       print_info("Inserting `graph_pid` on table `interscsimulator` on node ~p.", [node()]),
-      setAttribute(State, status, ready);
+      S1 = setAttribute(State, status, ready),
+      T = class_Actor:get_current_tick_offset(State),
+      executeOneway(S1, addSpontaneousTick, T+1);
     false ->
       executeOneway(State, declareTermination)
   end.
@@ -142,11 +144,11 @@ calculate_bfs(State, {Origin, Destination}, WhoPid) ->
           print_error("No path is possible from ~p to ~p~n", [Origin, Destination]),
           class_Actor:send_actor_message(WhoPid, {update_path, error}, State);
         _ ->
+          print_error("Solving from (~p)->(~p).", [Origin, Destination]),
           ets:insert(bfs_cache, {{Origin, Destination}, NewPath}),
           class_Actor:send_actor_message(WhoPid, {update_path, [NewPath]}, State)
       end;
     [{{Origin, Destination}, NewPath}] ->
-      print_info("Using cache from (~p)->(~p)", [Origin, Destination]),
       class_Actor:send_actor_message(WhoPid, {update_path, [NewPath]}, State)
   end,
   ?wooper_return_state_only(S2).
@@ -175,3 +177,26 @@ send_me_digraph(State, _, WhoPid) ->
   G = getAttribute(State, erl_graph_pid),
   Payload = zlib:gzip(term_to_binary(serialize_digraph(G))),
   class_Actor:send_actor_message(WhoPid, {update_your_digraph, {Payload}}, State).
+
+add_to_paths_to_solve(State, {U, V}, _WhoPid) ->
+  ets:insert(paths_to_solve, {{U, V}, ok}),
+  ?wooper_return_state_only(State).
+
+actSpontaneous(State) ->
+  1 = class_Actor:get_current_tick_offset(State), % additional check
+  resolve_needed_paths(),
+  ?wooper_return_state_only(State).
+
+resolve_needed_paths() ->
+  Paths = ets:tab2list(paths_to_solve),
+  do_resolve_needed_paths(Paths).
+
+do_resolve_needed_paths(Paths) ->
+  lists:foreach(fun({{U, V}, ok}) -> resolve_path({U, V}) end, Paths).
+
+resolve_path({Origin, Destination}) ->
+  [{Origin, U}] = ets:lookup(nodes_pids, Origin),
+  [{Destination, V}] = ets:lookup(nodes_pids, Destination),
+  [{graph_pid, G}] = ets:lookup(interscsimulator, graph_pid),
+  Path = digraph:get_short_path(G, U, V),
+  ets:insert(bfs_cache, {{Origin, Destination}, Path}).
