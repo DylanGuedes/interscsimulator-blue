@@ -20,6 +20,8 @@ run() ->
                                       {"../deps/brod/_build/default/lib/kafka_protocol/ebin", data},
                                       {"../deps/brod/_build/default/lib/snappyer/ebin", data},
                                       {"../deps/brod/_build/default/lib/supervisor3/ebin", data},
+                                      {"../deps/amqp_client/ebin", data},
+                                      {"../deps/amqp_client/include", data},
                                       {"/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittednodes.xml", data},
                                       {"/home/dylan/sim-diasca-blue/mock-simulators/interscsimulator-blue/assets/simulation_input/sao_paulo/saopaulo_splittedlinks.xml", data}
                                       ],
