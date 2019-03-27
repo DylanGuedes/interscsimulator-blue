@@ -1,6 +1,6 @@
 -module(class_CityGraph).
 
--import('interscsimulator_utils', [print_error/2, print_info/2]).
+-import('interscsimulator_utils', [print_error/2, print_info/2, validate_file/1]).
 
 -define(wooper_superclasses, [class_Actor]).
 -define(wooper_construct_parameters, ActorSettings, VerticesPath, EdgesPath).
@@ -11,7 +11,7 @@
 		 remote_synchronous_new_link/4, remote_synchronisable_new_link/4,
 		 remote_synchronous_timed_new/4, remote_synchronous_timed_new_link/4,
 		 construct/4, destruct/1, send_me_ets/3, send_me_digraph/3).
--define(wooper_method_export, onFirstDiasca/2, calculate_bfs/3, is_ready/2, update_capacity/3).
+-define(wooper_method_export, onFirstDiasca/2, calculate_bfs/3, update_capacity/3).
 
 -include("smart_city_test_types.hrl").
 -include("wooper.hrl").
@@ -19,18 +19,8 @@
 -spec construct(wooper:state(), class_Actor:actor_settings(),
                 string(), string()) -> wooper:state().
 construct(State, ?wooper_construct_parameters) ->
-  case filelib:is_regular(VerticesPath) of
-    true ->
-      ok;
-    false ->
-      throw({"File does not exist.", VerticesPath})
-  end,
-  case filelib:is_regular(EdgesPath) of
-    true ->
-      ok;
-    false ->
-      throw({"File does not exist.", EdgesPath})
-  end,
+  validate_file(VerticesPath),
+  validate_file(EdgesPath),
   ActorState = class_Actor:construct(State, ActorSettings, "City Graph"),
   case whereis(singleton_city_graph) of
     undefined ->
@@ -159,14 +149,6 @@ calculate_bfs(State, {Origin, Destination}, WhoPid) ->
       class_Actor:send_actor_message(WhoPid, {update_path, [NewPath]}, State)
   end,
   ?wooper_return_state_only(S2).
-
-is_ready(State, WhoPid) ->
-  case getAttribute(State, status) of
-    ready ->
-      class_Actor:send_actor_message(WhoPid, {ask_for_new_path}, State);
-    _ ->
-      class_Actor:send_actor_message(WhoPid, {wait_please}, State)
-  end.
 
 update_capacity(State, {V1Idx, V2Idx, Factor}, _WhoPid) ->
   [{{V1Idx, V2Idx}, E}] = ets:lookup(edges_pids, {V1Idx, V2Idx}),
