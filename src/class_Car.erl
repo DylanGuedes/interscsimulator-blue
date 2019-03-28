@@ -156,7 +156,7 @@ handle_trip_walk(State, CurrentNode_vtx, NextNode_vtx, RemainingNodes) ->
       do_not_walk(State);
     _A when Capacity < 0 ->
       % can't walk to next node
-      do_not_walk(State);
+      do_not_walk(State, Capacity);
     _ ->
       % can walk to next node. decrease edge (v1->v2), increase edge (last_node->v1)
       UpdatedState = setAttribute(State, remaining_nodes, RemainingNodes),
@@ -183,6 +183,10 @@ update_capacity(State, V1Idx, V2Idx, Factor) when is_list(V1Idx), is_list(V2Idx)
 do_not_walk(State) ->
   T = class_Actor:get_current_tick_offset(State),
   executeOneway(State, addSpontaneousTick, T+1).
+do_not_walk(State, Cap) ->
+  T = class_Actor:get_current_tick_offset(State),
+  executeOneway(State, addSpontaneousTick, T-Cap).
+
 
 float_to_string(Float) ->
   io_lib:format("~p", [Float]).
