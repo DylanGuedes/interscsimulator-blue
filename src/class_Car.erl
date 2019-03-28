@@ -191,7 +191,7 @@ walk(State, {EId, ELength, EFreeSpeed, ECapacity, _, _, _}=_Label) when is_float
   UpdatedState = setAttribute(State, current_edge_length, ELength),
   ElapsedTime = max(1, round(ELength / EFreeSpeed)),
   T = class_Actor:get_current_tick_offset(UpdatedState),
-  WPid = global:whereis_name(result_writer_singleton),
+  WPid = whereis(result_writer_singleton),
 	Payload = lists:flatten(io_lib:format("~s;~s;~s;~s;~p", [EId, float_to_string(ELength), float_to_string(EFreeSpeed), float_to_string(ECapacity), T])),
   UpdatedState2 = class_Actor:send_actor_message(WPid, {publish_event, {list_to_binary(Payload), <<"edge_update">>}}, UpdatedState),
   UpdatedState3 = send_to_data_processor(UpdatedState2),
@@ -201,7 +201,7 @@ send_to_data_processor(State) ->
   Uuid = getAttribute(State, uuid),
   NodeId = getAttribute(State, last_node_idx),
   T = class_Actor:get_current_tick_offset(State),
-  WPid = global:whereis_name(result_writer_singleton),
+  WPid = whereis(result_writer_singleton),
   class_Actor:send_actor_message(WPid, {write_to_data_collector, {Uuid, NodeId, T}}, State).
 
 check_replication(TablName, State) ->
@@ -217,7 +217,7 @@ onFirstDiasca(State, _SendingActorPid) ->
   CurrentTick = class_Actor:get_current_tick_offset(NodesEtsState),
   FirstActionTime = CurrentTick + StartTime,
 	NewState = setAttribute(NodesEtsState, start_time, FirstActionTime),
-  WPid = global:whereis_name(result_writer_singleton),
+  WPid = whereis(result_writer_singleton),
   S2 = setAttribute(NewState, writer_pid, WPid),
 	executeOneway(add_path_to_solve(S2), addSpontaneousTick, FirstActionTime).
 
