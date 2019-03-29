@@ -42,16 +42,22 @@ construct(State, ?wooper_construct_parameters) ->
       create_ets_table(nodes_pids, [public, set, named_table]),
       create_ets_table(bfs_cache, [public, set, named_table]),
       create_ets_table(paths_to_solve, [public, set, named_table]),
+      create_ets_table(random_manager, [public, set, named_table, {read_concurrency, true}]),
       create_ets_table(edges_pids, [public, set, named_table]);
     false ->
       ok
   end,
+  insert_random_manager_in_ets(),
 	setAttributes(ActorState, [
     { status, ready },
     { interscsimulator , false },
     { edges_pids , false },
     { nodes_pids, false}
   ]).
+
+insert_random_manager_in_ets() ->
+  Pid = class_RandomManager:create(),
+  ets:insert(random_manager, { any, Pid }).
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->
