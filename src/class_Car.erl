@@ -30,23 +30,23 @@ construct(State, ?wooper_construct_parameters) ->
   {ok, Tick1} = maps:find(start_time, CarMap),
   {ok, Uuid} = maps:find(uuid, CarMap),
 
-  ActorState = class_Actor:construct(State, ActorSettings, Id),
-  setAttributes(ActorState,
-                [
-                 { remaining_nodes_vtx, [] },
-                 { last_node_idx , -1 },
-                 { status, path_not_resolved },
-                 { car_name, Id },
-                 { distance , 0 },
-                 { length , 0},
-                 { car_position, -1 },
-                 { start_time , Tick1 },
-                 { path, 2 },
-                 { origin_idx, V1 },
-                 { destination_idx, V2 },
-                 { current_edge_length, 0 },
-                 { uuid, Uuid }
-                ]).
+	ActorState = class_Actor:construct(State, ActorSettings, Id),
+
+	setAttributes(ActorState, [
+    { remaining_nodes_vtx, [] },
+    { last_node_idx , -1 },
+    { status, path_not_resolved },
+		{ car_name, Id },
+		{ distance , 0 },
+    { length , 0},
+		{ car_position, -1 },
+		{ start_time , Tick1 },
+		{ path, 2 },
+    { origin_idx, V1 },
+    { destination_idx, V2 },
+    { current_edge_length, 0 },
+    { uuid, Uuid }
+  ]).
 
 -spec destruct(wooper:state()) -> wooper:state().
 destruct(State) ->
@@ -212,32 +212,18 @@ check_replication(TablName, State) ->
   EtsGodPid = whereis(ets_holder),
   class_Actor:send_actor_message(EtsGodPid, {ensure_replica_is_healthy, TablName}, State).
 
-% calculate a new tick using a gaussian distribution
-gaussianize_start_time(State) ->
-  RawTick = getAttribute(State, start_time),
-  Mu = RawTick,
-  Sigma = 300, % 300 seconds -> 5 minutes
-  [{any, RandomManagerPid}] = ets:lookup(random_manager, any),
-  RandomManagerPid ! { getGaussianValue, [ Mu, Sigma ], self() },
-  NewTick = receive
-    { wooper_result, { gaussian_value, Value } } ->
-                erlang:max(round(Value), 3)
-  end,
-  setAttribute(State, start_time, NewTick).
-
 -spec onFirstDiasca(wooper:state(), pid()) -> oneway_return().
 onFirstDiasca(State, _SendingActorPid) ->
   InterscsimulatorEtsState = check_replication(interscsimulator, State),
   EdgesEtsState = check_replication(edges_pids, InterscsimulatorEtsState),
   NodesEtsState = check_replication(nodes_pids, EdgesEtsState),
-  GaussianizedState = gaussianize_start_time(NodesEtsState),
-  CurrentTick = class_Actor:get_current_tick_offset(GaussianizedState),
-  StartTime = getAttribute(GaussianizedState, start_time),
+	StartTime = getAttribute(NodesEtsState, start_time),
+  CurrentTick = class_Actor:get_current_tick_offset(NodesEtsState),
   FirstActionTime = CurrentTick + StartTime,
-  NewState = setAttribute(GaussianizedState, start_time, FirstActionTime),
+	NewState = setAttribute(NodesEtsState, start_time, FirstActionTime),
   WPid = whereis(result_writer_singleton),
   S2 = setAttribute(NewState, writer_pid, WPid),
-  executeOneway(add_path_to_solve(S2), addSpontaneousTick, FirstActionTime).
+	executeOneway(add_path_to_solve(S2), addSpontaneousTick, FirstActionTime).
 
 add_path_to_solve(State) ->
   V1Idx = getAttribute(State, origin_idx),
