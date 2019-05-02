@@ -1,0 +1,23 @@
+[all:vars]
+ansible_user='ubuntu'           # Username for ssh connection
+ansible_become='yes'             # Run commands as root user?
+ansible_become_method='sudo'     # How do I become root user? Use sudo.
+
+## NuvemUsp VMs ##
+[nuvemusp-vms]
+;driver-node ansible_ssh_port=10233 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node2 ansible_ssh_port=10169 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node3 ansible_ssh_port=10051 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node4 ansible_ssh_port=10193 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node5 ansible_ssh_port=10097 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node6 ansible_ssh_port=10141 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node7 ansible_ssh_port=10240 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node8 ansible_ssh_port=10025 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node9 ansible_ssh_port=10012 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node10 ansible_ssh_port=10071 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node11 ansible_ssh_port=10142 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node12 ansible_ssh_port=10018 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node13 ansible_ssh_port=10055 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node14 ansible_ssh_port=10069 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node15 ansible_ssh_port=10003 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'
+computing-node16 ansible_ssh_port=10089 ansible_ssh_host=200.144.245.57 ansible_python_interpreter='/usr/bin/python3'

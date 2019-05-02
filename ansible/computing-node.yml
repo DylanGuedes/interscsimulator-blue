@@ -1,0 +1,177 @@
+---
+- hosts: nuvemusp-vms
+  strategy: free
+  tasks:
+    - name: Run apt update
+      apt:
+        update_cache: yes
+
+    - name: Install Java
+      apt:
+        name: openjdk-8-jdk
+        state: present
+
+    - name: Install automake
+      apt:
+        name: automake
+        state: present
+
+    - name: Install make
+      apt:
+        name: make
+        state: present
+
+    - name: Install curl
+      apt:
+        name: curl
+        state: present
+
+    - name: Install git
+      apt:
+        name: git
+        state: present
+
+    - name: Install g++
+      apt:
+        name: g++
+        state: present
+
+    - name: Clone SimDiasca
+      git:
+        repo: 'https://github.com/DylanGuedes/sim-diasca-blue.git'
+        dest: /home/ubuntu/sim-diasca-blue
+        clone: yes
+        update: no
+
+    - name: Clone InterSCSimulator
+      git:
+        repo: 'https://github.com/DylanGuedes/interscsimulator-blue.git'
+        dest: /home/ubuntu/sim-diasca-blue/mock-simulators/interscsimulator-blue
+        clone: yes
+        update: no
+
+    - name: Install GNUPlot
+      apt:
+        name: gnuplot-x11
+        state: present
+
+    - name: Install LibSSL
+      apt:
+        name: libssl-dev
+        state: present
+
+    - name: Install ncurses
+      apt:
+        name: libncurses5-dev
+        state: present
+
+    - name: Install GCC
+      apt:
+        name: gcc
+        state: present
+
+    - name: Create Binary Home
+      file: state=directory path=/home/ubuntu/.bin
+
+    - name: Download Kerl
+      get_url:
+        url: https://raw.githubusercontent.com/kerl/kerl/master/kerl
+        dest: /home/ubuntu/.bin
+      remote_user: ubuntu
+      sudo: false
+
+    - name: Give Kerl Binary Permission to Execute
+      file:
+        path: /home/ubuntu/.bin/kerl
+        mode: a+x
+      remote_user: ubuntu
+      sudo: false
+
+    - name: Add Home Binary to Path
+      lineinfile:
+        path: /home/ubuntu/.bashrc
+        line: 'export PATH=/home/ubuntu/.bin:$PATH'
+
+    - name: Get Erlang builds
+      shell: KERL_BASE_DIR=/home/ubuntu/.kerl /home/ubuntu/.bin/kerl list builds
+      register: kerl_builds
+      remote_user: ubuntu
+      sudo: false
+
+    - name: Build Erlang 20.0 using Kerl
+      shell: KERL_BASE_DIR=/home/ubuntu/.kerl /home/ubuntu/.bin/kerl build 20.0 20.0
+      when: "'no builds available' in kerl_builds.stdout"
+      remote_user: ubuntu
+      sudo: false
+
+    - name: Check if Erlang is installed
+      stat:
+        path: /home/ubuntu/kerl/20.0
+      register: kerl_installations
+
+    - name: Install Erlang 20.0 using Kerl
+      shell: KERL_BASE_DIR=/home/ubuntu/.kerl /home/ubuntu/.bin/kerl install 20.0 /home/ubuntu/kerl/20.0
+      when: kerl_installations.stat.exists == False
+
+    - name: Add Kerl Activation to Bashrc
+      lineinfile:
+        path: /home/ubuntu/.bashrc
+        line: '. /home/ubuntu/kerl/20.0/activate'
+        state: present
+
+    - name: Copy driver node ssh key
+      lineinfile:
+        path: /home/ubuntu/.ssh/authorized_keys
+        line: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDLe9f2TjsHM2FvFGyEdR8gQRVHk0FwAQemPSwshM5mfoTNTs7XXzsi7DtmRTlCehyoM7JK2nscTPmZVG/zeLhdQgXD2x8UuE2OE2hpVbXBWfjpK1e/HwAhxXDZMAzPTFYfH2LOePYZZb3k2a7boEBeJ4W9hxYs+G0KICkao0VIajOMzFkXAHIlE/w3P2lTXsyDwBPEpY7VL4vGqHpmr9fXyFWsM7oTr+oDmpXz2BaMzvwELS81YrLna/bHOvXi5ZaXsEoXovv33qh7xlBGzpqk9Y7KFfwGFk47Ly9K9mqgIqdrx2q/BSvjK06mmnWWyIQGqSy8AP3WLHrE7WKW4/+zwgeGMgwrOAFUGIsbju0AeAbWUIPuLg2jEluibi0V6qRnUvdqSKdjMy7v2o0WN7S1IXpBuRVjxE9SRQF/2djFfSkMW35aKuIch6sopum8+rdXpoKrQ8GZng2yAjBnVCyPcbPlmNC8Ey0FaOwNcpfBqB6ti78lyB4Yv1Qtwfxvm51NhMuOSDQUcpGQ35aGaB0aavTLEWpqcOdPDtSulO0hKbDf+X/JKbxlX92RDUtgKgSdNwY/dD6mxTuRC85dwIGKQ07Q4y2d54LVifgYqKo79c+X4ZdgZKibm32d+RxtE5Ga0dd/MbHjb0KT4SHmUi6Zs2nD1XeNkcLo8S9iuZ7odQ== ubuntu@dataproc1"
+
+    - name: Clone DataCollector
+      git:
+        repo: 'https://gitlab.com/interscity/interscity-platform/data-collector.git'
+        dest: /home/ubuntu/data-collector
+        clone: yes
+        update: no
+      become_user: ubuntu
+
+    - name: download spark
+      get_url:
+        url=http://ftp.unicamp.br/pub/apache/spark/spark-2.4.1/spark-2.4.1-bin-hadoop2.7.tgz
+        dest=/home/ubuntu/spark-2.4.1-bin-hadoop2.7.tgz
+      remote_user: ubuntu
+      sudo: false
+
+    - name: untar spark
+      shell: tar -xvf /home/ubuntu/spark-2.4.1-bin-hadoop2.7.tgz
+
+    - name: Add spark home env
+      lineinfile:
+        path: /home/ubuntu/.bashrc
+        line: 'export SPARK_HOME=/home/ubuntu/spark-2.4.1-bin-hadoop2.7'
+        state: present
+
+    - name: Add java home
+      lineinfile:
+        path: /home/ubuntu/.bashrc
+        line: 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64'
+        state: present
+
+    - name: Add java home
+      lineinfile:
+        path: /home/ubuntu/.bashrc
+        line: 'export PYSPARK_PYTHON=python3'
+        state: present
+
+- name: Configure servers with ruby support system wide
+  hosts: all
+
+  # roles:
+  #   - { role: rvm.ruby,
+  #     tags: ruby,
+  #     rvm1_rubies: ['ruby-2.3.1'],
+  #     rvm1_user: 'ubuntu'
+  #   }
+
+    # - name: Update Interscsimulator env variables
+    #   lineinfile:
+    #     path: /home/ubuntu/.bashrc
+    #     line: "source /home/ubuntu/sim-diasca-blue/mock-simulators/interscsimulator-blue/src/update_environment_variables.sh"
+
